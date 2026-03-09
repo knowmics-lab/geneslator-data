@@ -1,2 +1,2 @@
 # geneslator-data
-Genslator Database Repository
+Geneslator Database Repository
