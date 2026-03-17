@@ -6,7 +6,7 @@ Geneslator Database Repository for geneslator R package (https://github.com/know
 
 **geneslator** is a comprehensive R package for gene identifier conversion and genome annotation across multiple model organisms. The package integrates data from several cross-organism databases and organism-specific resources within a single, coherent framework. Four different types of data about a gene are integrated: annotations from general databases (symbol, aliases, full name, genetype), annotations from species-specific databases, functional annotations (pathways and gene ontologies), and orthologs.
 
-![Geneslator's workflow](percorso/della/tua/immagine.png)
+![Geneslator's workflow](GeneslatorWorkflow.png)
 
 Currently, annotation databases have been built for the following 8 model organisms: Human (Homo sapiens), Mouse (Mus musculus), Rat (Rattus norvegicus), Fly (Drosophila melanogaster ), Zebrafish (Danio rerio), Yeast (Saccharomyces cerevisiae), Worm (Caenorhabditis elegans), and Arabidopsis (Arabidopsis thaliana). More organisms will be included in future releases of **geneslator**.
 
