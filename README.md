@@ -34,4 +34,4 @@ Annotation databases resulting from the integration of all gene are built as SQL
 
 ## Database releases
 
-**geneslator** annotation databases are updated each month. At each update, databases are collected in a new Github release. All published releases are available at [<https://github.com/knowmics-lab/geneslator-data/releases>](<https://github.com/knowmics-lab/geneslator-data/releases>).
+**geneslator** annotation databases are stored as a Zenodo record and available at [<https://zenodo.org/records/20457977>](<https://zenodo.org/records/20457977>). Databases are updated on a monthly basis. At each update, annotation databases are stored in a new version of the Zenodo record.
