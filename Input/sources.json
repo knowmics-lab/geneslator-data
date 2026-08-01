@@ -1,0 +1,132 @@
+{
+  "global_sources": {
+    "ncbi_archive": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_history.gz",
+    "ncbi_orthologs": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_orthologs.gz",
+    "ensembl": "https://ftp.ensembl.org/pub/",
+    "ensemblGenomes": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/",
+    "uniprot": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/",
+    "alliance_genome_orthologs": "https://fms.alliancegenome.org/download/ORTHOLOGY-ALLIANCE_COMBINED.tsv.gz",
+    "go_dictionary": "https://purl.obolibrary.org/obo/go.obo",
+    "reactome": "https://reactome.org/download/current/",
+    "reactomePlant": "https://plantreactome.gramene.org/download/current/",
+    "wikipathways": "https://data.wikipathways.org/current/gmt/"
+  },
+  "species_sources": [
+    {
+      "species": "Human",
+      "official_name": "Homo sapiens",
+      "taxid": 9606,
+      "speciesdb_name": "HGNC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz",
+      "ensembl_grch37": "https://ftp.ensembl.org/pub/grch37/current/gtf/homo_sapiens/Homo_sapiens.GRCh37.87.gtf.gz",
+      "speciesdb": "https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt",
+      "speciesdb_orthologs": "https://storage.googleapis.com/public-download-files/hcop/human_all_hcop_seven_column.txt.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/HUMAN-uniprot.gaf.gz"
+    },
+    {
+      "species": "Mouse",
+      "official_name": "Mus musculus",
+      "taxid": 10090,
+      "speciesdb_name": "MGI",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Mus_musculus.gene_info.gz",
+      "speciesdb": "http://www.informatics.jax.org/downloads/reports/MRK_List2.rpt",
+      "go": "https://current.geneontology.org/annotations/gaf/MOUSE-uniprot.gaf.gz"
+    },
+    {
+      "species": "Rat",
+      "official_name": "Rattus norvegicus",
+      "taxid": 10116,
+      "speciesdb_name": "RGD",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Rattus_norvegicus.gene_info.gz",
+      "speciesdb": "https://download.rgd.mcw.edu/pub/data_release/GENES_RAT.txt",
+      "go": "https://current.geneontology.org/annotations/gaf/RAT-uniprot.gaf.gz"
+    },
+    {
+      "species": "Zebrafish",
+      "official_name": "Danio rerio",
+      "taxid": 7955,
+      "speciesdb_name": "ZFIN",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Non-mammalian_vertebrates/Danio_rerio.gene_info.gz",
+      "speciesdb": "https://zfin.org/downloads/zfin_genes.gff3",
+      "go": "https://current.geneontology.org/annotations/gaf/DANRE-uniprot.gaf.gz"
+    },
+    {
+      "species": "Fly",
+      "official_name": "Drosophila melanogaster",
+      "taxid": 7227,
+      "speciesdb_name": "FLYBASE",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/Drosophila_melanogaster.gene_info.gz",
+      "speciesdb": "https://s3ftp.flybase.org/releases/current/precomputed_files/genes/",
+      "go": "https://current.geneontology.org/annotations/gaf/DROME-uniprot.gaf.gz"
+    },
+    {
+      "species": "Worm",
+      "official_name": "Caenorhabditis elegans",
+      "taxid": 6239,
+      "speciesdb_name": "WORMBASE",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/Caenorhabditis_elegans.gene_info.gz",
+      "speciesdb": "https://downloads.wormbase.org/species/c_elegans/annotation/geneIDs/c_elegans.PRJNA13758.current.geneIDs.txt.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/CAEEL-uniprot.gaf.gz"
+    },
+    {
+      "species": "Yeast",
+      "official_name": "Saccharomyces cerevisiae",
+      "taxid": 559292,
+      "speciesdb_name": "SGD",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Fungi/Saccharomyces_cerevisiae.gene_info.gz",
+      "speciesdb": "http://sgd-archive.yeastgenome.org/curation/chromosomal_feature/saccharomyces_cerevisiae.gff.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/YEAST-uniprot.gaf.gz"
+    },
+    {
+      "species": "Arabidopsis",
+      "official_name": "Arabidopsis thaliana",
+      "taxid": 3702,
+      "speciesdb_name": "TAIR",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Arabidopsis_thaliana.gene_info.gz",
+      "speciesdb": "https://www.arabidopsis.org/download/file?path=Genes/Araport11_genome_release/Araport11_GFF3_genes_transposons.20250813.gff.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/ARATH-uniprot.gaf.gz"
+    },
+    {
+      "species": "Cabbage",
+      "official_name": "Brassica oleracea",
+      "taxid": [3712,109376],
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
+      "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/435602.B_oleracea_var_oleracea.goa"
+    },
+    {
+      "species": "Rapeseed",
+      "official_name": "Brassica napus",
+      "taxid": 3708,
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
+      "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/388940.B_napus_Rape.goa"
+    },
+    {
+      "species": "Tomato",
+      "official_name": "Solanum lycopersicum",
+      "taxid": 4081,
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/SOLLC-uniprot.gaf.gz"
+    },
+    {
+      "species": "Grapevine",
+      "official_name": "Vitis vinifera",
+      "taxid": 29760,
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/VITVI-uniprot.gaf.gz"
+    },
+    {
+      "species": "BlueLupin",
+      "official_name": "Lupinus angustifolius",
+      "taxid": 3871,
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
+      "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/4101492.L_angustifolius_Narrow-leaved_blue_lupine.goa"
+    },
+    {
+      "species": "CommonBean",
+      "official_name": "Phaseolus vulgaris",
+      "taxid": 3885,
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
+      "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/29213.P_vulgaris_Negro_Jamapa.goa"
+    }
+  ]
+}
