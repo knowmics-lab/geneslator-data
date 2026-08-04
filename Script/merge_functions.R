@@ -220,7 +220,7 @@ merge.ortho.databases <- function(ncbi.orthologs,ensembl.orthologs,alliance.orth
 }
 
 merge.with.ensembl.archive.data <- function(ensembl.data,ensembl.archive.data,species,speciesdb.name,
-                                            ncbi.data,speciesdb.data,hcop.data,taxid)
+                                            ncbi.data,hcop.data,taxid)
 {
   list.versions <- sort(as.numeric(names(ensembl.archive.data)),decreasing=T)
   for(i in list.versions){
@@ -238,7 +238,7 @@ merge.with.ensembl.archive.data <- function(ensembl.data,ensembl.archive.data,sp
       list.curr.ens.ids <- unique(c(list.ncbi.ens.ids,list.ensembl.ids,list.ensembl.old.ids))
     
       #Process archive data
-      ensembl.archive <- process.ensembl.data(ens.data,speciesdb.name,ncbi.data,speciesdb.data,hcop.data,taxid,is.archive=T)
+      ensembl.archive <- process.ensembl.data(ens.data,speciesdb.name,ncbi.data,hcop.data,taxid,is.archive=T)
       if(species=="Arabidopsis"){
         colnames(ensembl.archive) <- c("SYMBOL","GENENAME","ALIAS ARCHIVE","GENETYPE ARCHIVE","ENSEMBL ARCHIVE")
       } else {

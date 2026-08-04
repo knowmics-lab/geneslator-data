@@ -65,7 +65,7 @@
       "taxid": 6239,
       "speciesdb_name": "WORMBASE",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/Caenorhabditis_elegans.gene_info.gz",
-      "speciesdb": "https://downloads.wormbase.org/species/c_elegans/annotation/geneIDs/c_elegans.PRJNA13758.current.geneIDs.txt.gz",
+      "speciesdb": "https://fms.alliancegenome.org/download/BGI_WB.json.gz",
       "go": "https://current.geneontology.org/annotations/gaf/CAEEL-uniprot.gaf.gz"
     },
     {
@@ -83,7 +83,7 @@
       "taxid": 3702,
       "speciesdb_name": "TAIR",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Arabidopsis_thaliana.gene_info.gz",
-      "speciesdb": "https://www.arabidopsis.org/download/file?path=Genes/Araport11_genome_release/Araport11_GFF3_genes_transposons.20250813.gff.gz",
+      "speciesdb": "https://www.arabidopsis.org/api/download-files/list?dir=Genes/Araport11_genome_release/",
       "go": "https://current.geneontology.org/annotations/gaf/ARATH-uniprot.gaf.gz"
     },
     {

@@ -38,9 +38,13 @@ download.tabular.data <- function(url, header="auto",skip=0)
 download.json.data <- function(url, filter.string)
 {
   file <- download.annot.file(url)
-  filtered.json <- system(paste0('jq ',shQuote(filter.string),' ',file),intern=T)
-  json.data <- fromJSON(filtered.json)
-  json.data[json.data==""] <- NA
+  if(filter.string==""){
+    json.data <- fromJSON(file,simplifyDataFrame = FALSE)
+  } else {
+    filtered.json <- system(paste0('jq ',shQuote(filter.string),' ',file),intern=T)
+    json.data <- fromJSON(filtered.json)
+    json.data[json.data==""] <- NA
+  }
   file.remove(file)
   return(json.data)
 }
@@ -83,11 +87,22 @@ download.wikipathways.data <- function(url, species)
   return(wikipath.data)
 }
 
-filter.remote.links <- function(url, file.filter.string)
+filter.remote.links.html <- function(url, file.filter.string)
 {
   folder.content <- curl_fetch_memory(url)
   list.links <- read_html(folder.content$content) %>% html_elements("a") %>% html_text(trim=T)
   list.links <- list.links[grep(file.filter.string,list.links)]
+  return(list.links)
+}
+
+filter.remote.links.json <- function(url, file.filter.string) {
+  folder.content <- curl_fetch_memory(url)
+  listing <- fromJSON(rawToChar(folder.content$content))
+  #Keep only entries of type "file" at root level
+  is_file <- sapply(listing, function(x) is.list(x) && !is.null(x$type) && x$type == "file")
+  files_root <- listing[is_file]
+  #Filter by requested pattern
+  list.links <- names(files_root)[grepl(file.filter.string, names(files_root))]
   return(list.links)
 }
 

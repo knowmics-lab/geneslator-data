@@ -165,7 +165,7 @@ process.ncbi.archive.data <- function(global.ncbi.archive.data,global.ncbi.disco
   return(list.res)
 }
 
-process.ensembl.data <- function(ensembl.data,speciesdb.name,ncbi.data,speciesdb.data,hcop.data,taxid,is.archive)
+process.ensembl.data <- function(ensembl.data,speciesdb.name,ncbi.data,hcop.data,taxid,is.archive)
 {
   #Pre-process data
   colnames(ensembl.data) <- c("SYMBOL","GENETYPE","ENSEMBL","GENENAME")
@@ -306,7 +306,7 @@ process.ensembl.grch37.data <- function(ensembl.archive.data,speciesdb.name)
 process.uniprot.data <- function(uniprot.data,speciesdb.name,species)
 {
   uniprot.data <- uniprot.data[uniprot.data$V2 %in% c("Gene_Name","GeneID","EnsemblGenome"),c("V1","V2","V3")]
-  uniprot.data <- as.data.frame(pivot_wider(uniprot.data, names_from = V2, values_from = V3, values_fn = first))
+  uniprot.data <- as.data.frame(pivot_wider(uniprot.data, names_from = V2, values_from = V3, values_fn = dplyr::first))
   colnames(uniprot.data)[colnames(uniprot.data)=="V1"] <- "UNIPROT"
   colnames(uniprot.data)[colnames(uniprot.data)=="EnsemblGenome"] <- "ENSEMBL"
   colnames(uniprot.data)[colnames(uniprot.data)=="GeneID"] <- "ENTREZID"
@@ -434,11 +434,29 @@ process.sgd.data <- function(speciesdb.data)
 
 process.wormbase.data <- function(speciesdb.data)
 {
-  speciesdb.data <- speciesdb.data[,c(3,4,6,2)]
-  colnames(speciesdb.data) <- c("SYMBOL","ALIAS SPECIAL","GENETYPE SPECIAL","WORMBASE SPECIAL")
+  #Create gene annotation table
+  speciesdb.data <- do.call(rbind, lapply(speciesdb.data$data, function(rec) {
+    bge <- rec$basicGeneticEntity
+    #Extract Wormbase IDs
+    wb.id <- gsub("^WB:","",bge$primaryId)
+    #Extract aliases
+    alias <- if (is.null(bge$synonyms) || length(bge$synonyms) == 0) {
+      rec$symbol
+    } else {
+      paste(c(bge$synonyms,rec$symbol), collapse = "|")
+    }
+    data.frame("SYMBOL"=ifelse(is.null(rec$symbol),NA,rec$symbol),"ALIAS SPECIAL"=alias,
+      "WORMBASE SPECIAL"=ifelse(is.null(wb.id),NA,wb.id),check.names = F)
+  }))
+  #Remove genes with no symbol
   speciesdb.data <- speciesdb.data[!is.na(speciesdb.data$SYMBOL),]
-  speciesdb.data$`ALIAS SPECIAL` <- ifelse(is.na(speciesdb.data$`ALIAS SPECIAL`),speciesdb.data$SYMBOL,
-                paste0(speciesdb.data$`ALIAS SPECIAL`,"|",speciesdb.data$SYMBOL))
+  #Group info by gene symbol
+  speciesdb.data <- speciesdb.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+    unique.info <- unique(unlist(strsplit(x,"\\|")))
+    res <- paste0(sort(unique.info[!is.na(unique.info)]),collapse="|")
+    ifelse(res=="",NA,res)
+  }))
+  #Copy Wormbase IDs to Ensembl column
   speciesdb.data[["ENSEMBL SPECIAL"]] <- speciesdb.data[["WORMBASE SPECIAL"]]
   return(as.data.frame(speciesdb.data))
 }
