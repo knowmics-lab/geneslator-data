@@ -263,13 +263,13 @@ for(species in list.species){
   filter.string.ortho.json <- paste0('[.genes[] | .id as $gene_id | .homologues[] | select(.taxonomy_id | IN(',
       paste0(list.species.taxid[!list.species.taxid %in% species.taxid],collapse = ","),
       ')) | {ID: $gene_id, TAXID: .taxonomy_id, ENSEMBL: .stable_id}]')
-  ensembl.orthologs.data <- download.json.data(paste0(ensembl.url,"current/",
+  ensembl.orthologs <- download.json.data(paste0(ensembl.url,"current/",
     ensembl.orthologs.folder,"/",ensembl.orthologs.species,".json"),filter.string.ortho.json)
   print("Process Ensembl orthologs data...")
-  if(class(ensembl.orthologs.data)=="list"){
-    ensembl.orthologs.data <- data.frame(matrix(NA, nrow = 0, ncol = 3))
+  if(class(ensembl.orthologs)=="list"){
+    ensembl.orthologs <- data.frame(matrix(NA, nrow = 0, ncol = 3))
   }
-  ensembl.orthologs.data <- process.ensembl.orthologs.data(ensembl.orthologs.data,
+  ensembl.orthologs <- process.ensembl.orthologs.data(ensembl.orthologs,
     species.taxid,taxonomy.table,annotation.data.list)
   
   #----------ALLIANCE orthologs data----------
@@ -280,13 +280,13 @@ for(species in list.species){
   #----------SPECIESDB orthologs data-------------
   if(!is.na(list.species.urls$speciesdb_orthologs)){
     print("Download species-specific DB orthologs data...")
-    speciesdb.orthologs.data <- download.tabular.data(list.species.urls$speciesdb_orthologs)
-    speciesdb.orthologs.data <- speciesdb.orthologs.data[speciesdb.orthologs.data$ortholog_species %in% species.url$taxid,]
+    speciesdb.orthologs <- download.tabular.data(list.species.urls$speciesdb_orthologs)
+    speciesdb.orthologs <- speciesdb.orthologs[speciesdb.orthologs$ortholog_species %in% species.url$taxid,]
     print("Process species-specific DB orthologs data...")
-    speciesdb.orthologs.data <- process.speciesdb.orthologs.data(speciesdb.orthologs.data,
+    speciesdb.orthologs <- process.speciesdb.orthologs.data(speciesdb.orthologs,
       species.taxid,taxonomy.table,annotation.data.list)
   } else {
-    speciesdb.orthologs.data <- data.frame()
+    speciesdb.orthologs <- data.frame()
   }
   
   #-----------Merge orthologs data--------------
@@ -327,14 +327,10 @@ for(species in list.species){
   annotation.data <- merge(annotation.data,go.data,all.x=T)
   annotation.data <- merge(annotation.data,reactome.data,all.x=T)
   annotation.data <- merge(annotation.data,wikipathways.data,all.x=T)
+  annotation.data <- as.data.frame(annotation.data)
   
   #----------Write annotation DB to output file------------
   print(paste0("Save annotation table for ",species," as SQLite file..."))
-  #Create annotation output folder, if it does not exist
-  if(!dir.exists(output.folder)){
-    mkdirs(output.folder)
-  }
-  #Write annotations
   #Add GID to annotation table
   annotation.table <- annotation.data
   annotation.table[is.na(annotation.table$SYMBOL),"SYMBOL"] <- "NA"
@@ -413,13 +409,13 @@ for(species in list.species){
     build.package.args$uniprot <- uniprot.table
   }
   #ORTHOLOGS
-  for(other.org in species.metadata$species){
-    if(org!=other.org){
-      ortho.data <- annotation.table[,c("GID",paste0("ORTHO",toupper(other.org)))]
-      ortho.data <- ortho.data[!is.na(ortho.data[[paste0("ORTHO",toupper(other.org))]]),]
-      ortho.data <- as.data.frame(ortho.data %>% separate_rows(all_of(c(paste0("ORTHO",toupper(other.org)))),sep="\\|"))
+  for(other.species in species.url$species){
+    if(species!=other.species){
+      ortho.data <- annotation.table[,c("GID",paste0("ORTHO",toupper(other.species)))]
+      ortho.data <- ortho.data[!is.na(ortho.data[[paste0("ORTHO",toupper(other.species))]]),]
+      ortho.data <- as.data.frame(ortho.data %>% separate_rows(all_of(c(paste0("ORTHO",toupper(other.species)))),sep="\\|"))
       if(nrow(ortho.data)>0){
-        build.package.args[[paste0("ortho",other.org)]] <- ortho.data
+        build.package.args[[paste0("ortho",other.species)]] <- ortho.data
       }
     }
   }
@@ -450,9 +446,8 @@ for(species in list.species){
   build.package.args$maintainer <- "Giovanni Micale <giovanni.micale@unict.it>"
   build.package.args$author <- "Giovanni Micale <giovanni.micale@unict.it>"
   build.package.args$outputDir <- output.folder
-  species.taxid <- species.metadata[species.metadata$species==org,"taxid"][[1]]
   build.package.args$tax_id <- species.taxid[length(species.taxid)]
-  species.tax <- strsplit(species.metadata[species.metadata$species==org,"official_name"]," ")[[1]]
+  species.tax <- strsplit(species.scientific.name," ")[[1]]
   build.package.args$genus <- species.tax[1]
   build.package.args$species <- species.tax[2]
   #Create annotation database
@@ -461,16 +456,20 @@ for(species in list.species){
   db.name <- paste0("org.", substring(species.tax[1],1,1), species.tax[2], ".eg")
   pkg.folder <- file.path(output.folder, paste0(db.name, ".db"))
   built.sqlite <- file.path(pkg.folder, "inst", "extdata", paste0(db.name, ".sqlite"))
-  final.sqlite <- file.path(output.folder, paste0(db.name, ".sqlite"))
+  final.sqlite <- file.path(output.folder, paste0(gsub(".eg$",".db",db.name), ".sqlite"))
   if(file.exists(built.sqlite)){
     file.copy(built.sqlite, final.sqlite, overwrite = TRUE)
   }
   #Delete the built package folder (only the .sqlite is wanted)
   unlink(pkg.folder, recursive = TRUE, force = TRUE)
+  if(file.exists(gsub(".db$",".sqlite",pkg.folder))){
+    file.remove(gsub(".db$",".sqlite",pkg.folder))
+  }
   if(save.text) {
     print(paste0("Save annotation table for ",species," as text file..."))
-    write.table(annotation.data,file.path(output.folder,paste0(species,".txt")),
+    write.table(annotation.data,file.path(output.folder,paste0(gsub(".eg$",".db",db.name),".txt")),
                 sep="\t",quote=F,row.names = F)
   }
   
 }
+print("DONE!")
