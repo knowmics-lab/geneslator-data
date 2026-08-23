@@ -15,12 +15,14 @@ source(file.path(script.dir, "merge_functions.R"))
 #Load required packages
 ensure.packages(
   cran.pkgs = c("data.table","jsonlite","curl","zen4R","rvest","R.utils","ontologyIndex",
-                "rentrez","xml2","purrr","dplyr","tidyr","optparse"),
+                "rentrez","xml2","purrr","dplyr","tidyr","optparse","DBI","RSQLite"),
   bioc.pkgs = c("rtracklayer","rWikiPathways","AnnotationForge")
 )
 
 #Read input parameters
 option.list <- list(
+  make_option(c("--org"), type = "character", default = "all",
+              help = "Organisms [default: %default]"),
   make_option(c("--folder"), type = "character", default = "Output",
               help = "Output folder [default: %default]"),
   make_option(c("--saveTxt"), action = "store_true", default = FALSE,
@@ -28,6 +30,8 @@ option.list <- list(
 )
 opt.parser <- OptionParser(option_list = option.list)
 opt <- parse_args(opt.parser)
+org.set <- opt$org
+org.set <- strsplit(org.set,",")[[1]]
 output.folder <- file.path(base.dir, opt$folder)
 dir.create(output.folder, showWarnings = FALSE, recursive = TRUE)
 save.text <- opt$saveTxt
@@ -36,6 +40,9 @@ save.text <- opt$saveTxt
 list.urls <- fromJSON(file.path(base.dir, "sources.json"), simplifyVector = TRUE)
 global.urls <- list.urls$global_sources
 species.url <- list.urls$species_sources
+if(org.set!="all"){
+  species.url <- species.url[species.url$official_name %in% org.set,]
+}
 
 #Prepare annotation data
 annotation.data.list <- list()
@@ -52,7 +59,11 @@ global.ncbi.archive.data <- global.ncbi.archive.data[global.ncbi.archive.data$`#
 
 #NCBI data about discontinued ids
 print("Get annotations for NCBI discontinued ids...")
-global.ncbi.discontinued.data <- query.ncbi.discontinued.data(global.ncbi.archive.data)
+if(nrow(global.ncbi.archive.data)>0){
+  global.ncbi.discontinued.data <- query.ncbi.discontinued.data(global.ncbi.archive.data)
+} else {
+  global.ncbi.discontinued.data <- data.frame()
+}
 
 #Get list of Ensembl folders
 print("Get list of Ensembl folders required to download annotation data...")
@@ -75,7 +86,8 @@ names(ensembl.genome.folders) <- ensembl.genome.species
 
 #Read UNIPROT proteome species data
 print("Get list of UNIPROT proteome identifiers required to download annotation data...")
-uniprot.species <- download.tabular.data(paste0(global.urls$uniprot,"README"),skip="Proteome_ID\t")
+uniprot.species <- download.tabular.data(paste0(global.urls$uniprot,"README"),skip="Proteome_ID\t",
+  alternative.url=paste0(global.urls$uniprot_alternative,"README"))
 uniprot.species <- uniprot.species[uniprot.species$Tax_ID %in% unlist(species.url$taxid),]
 uniprot.species <- uniprot.species[!duplicated(uniprot.species$Tax_ID),]
 
@@ -105,8 +117,7 @@ reactome.plant.ensembl <- download.tabular.data(paste0(global.urls$reactomePlant
 
 #HCOP data
 print("Download HCOP data...")
-hcop.data <- download.tabular.data(species.url[species.url$species=="Human","speciesdb_orthologs"])
-hcop.data <- hcop.data[hcop.data$ortholog_species %in% species.url[species.url$species=="Human","taxid"],]
+hcop.data <- download.tabular.data(list.urls$species_sources[list.urls$species_sources$species=="Human","speciesdb_orthologs"])
 
 
 ##-----------BUILD GENERAL INFO ANNOTATION DATA-----------
@@ -128,10 +139,11 @@ for(species in list.species){
   ncbi.data <- download.tabular.data(list.species.urls$ncbi_current)
   print("Process NCBI current data...")
   ncbi.data <- ncbi.data[ncbi.data$`#tax_id` %in% species.taxid,]
-  ncbi.data <- process.ncbi.data(ncbi.data,species.taxid,speciesdb.name)
+  ncbi.data <- process.ncbi.data(ncbi.data,speciesdb.name)
   #Process archive data
   print("Process archive data...")
-  ncbi.archive.data <- process.ncbi.archive.data(global.ncbi.archive.data,global.ncbi.discontinued.data,species.taxid,speciesdb.name)
+  ncbi.archive.data <- global.ncbi.archive.data[global.ncbi.archive.data$`#tax_id` %in% species.taxid,]
+  ncbi.archive.data <- process.ncbi.archive.data(ncbi.archive.data,global.ncbi.discontinued.data,speciesdb.name)
   ncbi.replaced.data <- ncbi.archive.data[[1]]
   ncbi.discontinued.data <- ncbi.archive.data[[2]]
   #Merge current and archive data
@@ -166,9 +178,17 @@ for(species in list.species){
       list.filters <- "gene"
       download.path <- gsub("list\\?dir","download?filePath",list.species.urls$speciesdb)
       speciesdb.data <- download.gff.data(paste0(download.path,speciesdb.file),list.tags,list.filters)
+    } else if(species=="AfricanClawedFrog"){
+      speciesdb.data <- download.delim.data(list.species.urls$speciesdb,header=F,comment.character="!")
+      speciesdb.data <- speciesdb.data[speciesdb.data$V7==paste0("taxon:",species.taxid),]
+    } else if(species=="Macaque"){
+      speciesdb.data <- download.tabular.data(list.species.urls$speciesdb)
+      speciesdb.data <- speciesdb.data[speciesdb.data$taxon_id %in% species.taxid,]
     }
     print("Process species-specific DB data...")
     speciesdb.data <- process.speciesdb.data(speciesdb.data,species)
+  } else {
+    speciesdb.data <- data.frame()
   }
   
   #-------------ENSEMBL data------------------
@@ -181,44 +201,48 @@ for(species in list.species){
     ensembl.url <- global.urls$ensemblGenomes
     ensembl.folder <- ensembl.genome.folders[species.scientific.name]
   }
-  list.tags.ens <- c("Name","biotype","gene_id","description")
-  list.filters.ens <- c("C_gene_segment","gene","J_gene_segment","lincRNA_gene","miRNA_gene",
+  if(!is.na(ensembl.folder)){
+    list.tags.ens <- c("Name","biotype","gene_id","description")
+    list.filters.ens <- c("C_gene_segment","gene","J_gene_segment","lincRNA_gene","miRNA_gene",
                         "mt_gene","processed_transcript","pseudogene","RNA","rRNA_gene","snoRNA_gene","snRNA_gene",
                         "V_gene_segment","VD_gene_segment","ncRNA_gene")
-  ensembl.path <- paste0(ensembl.url,"current/",ensembl.folder)
-  link.content <- curl_fetch_memory(paste0(ensembl.path,"/?C=S;O=D"))
-  list.links <- read_html(link.content$content) %>% html_elements("a") %>% html_text(trim=T)
-  ensembl.file <- list.links[grep("gff3",list.links)[1]]
-  ensembl.data <- download.gff.data(paste0(ensembl.path,"/",ensembl.file),list.tags.ens,list.filters.ens)
-  print("Process Ensembl current data...")
-  ensembl.data <- process.ensembl.data(ensembl.data,speciesdb.name,ncbi.data,
-    if(species == "Zebrafish") hcop.data else NULL,species.taxid,is.archive=F)
-  #Process archive data
-  ensembl.data[["ENSEMBLOLD ENSEMBL"]] <- NA
-  ensembl.archive.data <- list()
-  print("Download Ensembl archive data...")
-  ensembl.links <- filter.remote.links.html(ensembl.url,"release-")
-  for(archive.link in ensembl.links){
-    ensembl.version <- strsplit(archive.link,"-|/")[[1]][2]
-    release.folder <- paste0(ensembl.url,archive.link,ensembl.folder)
-    ensembl.archive <- download.ensembl.archive.data(release.folder, ensembl.version,
-      list.tags.ens, list.filters.ens, species.scientific.name)
-    if(!is.null(ensembl.archive)){
-      ensembl.archive.data[[ensembl.version]] <- ensembl.archive
+    ensembl.path <- paste0(ensembl.url,"current/",ensembl.folder)
+    link.content <- curl_fetch_memory(paste0(ensembl.path,"/?C=S;O=D"))
+    list.links <- read_html(link.content$content) %>% html_elements("a") %>% html_text(trim=T)
+    ensembl.file <- list.links[grep("gff3",list.links)[1]]
+    ensembl.data <- download.gff.data(paste0(ensembl.path,"/",ensembl.file),list.tags.ens,list.filters.ens)
+    print("Process Ensembl current data...")
+    ensembl.data <- process.ensembl.data(ensembl.data,speciesdb.name,ncbi.data,
+      if(species == "Zebrafish") hcop.data else NULL,species.taxid,is.archive=F)
+    #Process archive data
+    ensembl.data[["ENSEMBLOLD ENSEMBL"]] <- NA
+    ensembl.archive.data <- list()
+    print("Download Ensembl archive data...")
+    ensembl.links <- filter.remote.links.html(ensembl.url,"release-")
+    for(archive.link in ensembl.links){
+      ensembl.version <- strsplit(archive.link,"-|/")[[1]][2]
+      release.folder <- paste0(ensembl.url,archive.link,ensembl.folder)
+      ensembl.archive <- download.ensembl.archive.data(release.folder, ensembl.version,
+        list.tags.ens, list.filters.ens, species.scientific.name)
+      if(!is.null(ensembl.archive)){
+        ensembl.archive.data[[ensembl.version]] <- ensembl.archive
+      }
     }
-  }
-  print("Merge current and archive Ensembl data...")
-  ensembl.data <- merge.with.ensembl.archive.data(ensembl.data,ensembl.archive.data,
-    species,speciesdb.name,ncbi.data,if(species == "Zebrafish") hcop.data else NULL,species.taxid)
-  #Process GRCH37 data
-  if(!is.na(list.species.urls$ensembl_grch37)){
-    print("Download GRCh37 Ensembl data...")
-    list.tags <- c("gene_id","gene_biotype","gene_name")
-    list.filters <- "gene"
-    ensembl.grch37.data <- download.gff.data(list.species.urls$ensembl_grch37,list.tags,list.filters)
-    ensembl.grch37.data <- process.ensembl.grch37.data(ensembl.grch37.data,speciesdb.name)
-    print("Merge GRCh37 data with Ensembl current and archive data...")
-    ensembl.data <- merge.with.ensembl.grch37.data(ensembl.data,ensembl.grch37.data,ncbi.data,speciesdb.name)
+    print("Merge current and archive Ensembl data...")
+    ensembl.data <- merge.with.ensembl.archive.data(ensembl.data,ensembl.archive.data,
+      species,speciesdb.name,ncbi.data,if(species == "Zebrafish") hcop.data else NULL,species.taxid)
+    #Process GRCH37 data
+    if(!is.na(list.species.urls$ensembl_grch37)){
+      print("Download GRCh37 Ensembl data...")
+      list.tags <- c("gene_id","gene_biotype","gene_name")
+      list.filters <- "gene"
+      ensembl.grch37.data <- download.gff.data(list.species.urls$ensembl_grch37,list.tags,list.filters)
+      ensembl.grch37.data <- process.ensembl.grch37.data(ensembl.grch37.data,speciesdb.name)
+      print("Merge GRCh37 data with Ensembl current and archive data...")
+      ensembl.data <- merge.with.ensembl.grch37.data(ensembl.data,ensembl.grch37.data,ncbi.data,speciesdb.name)
+    }
+  } else {
+    ensembl.data <- data.frame()
   }
   
   #--------------UNIPROT data------------------
@@ -228,9 +252,10 @@ for(species in list.species){
   uniprot.code <- uniprot.species[uniprot.species$Tax_ID %in% species.taxid,"Proteome_ID"]
   uniprot.tax <- uniprot.species[uniprot.species$Tax_ID %in% species.taxid,"Tax_ID"]
   uniprot.url <- paste0(global.urls$uniprot,uniprot.class,"/",uniprot.code,"/",uniprot.code,"_",uniprot.tax,".idmapping.gz")
-  uniprot.data <- download.tabular.data(uniprot.url,header=F)
+  uniprot.url.alternative <- paste0(global.urls$uniprot_alternative,uniprot.class,"/",uniprot.code,"/",uniprot.code,"_",uniprot.tax,".idmapping.gz") 
+  uniprot.data <- download.tabular.data(uniprot.url,header=F,alternative.url=uniprot.url.alternative)
   print("Process Uniprot data...")
-  uniprot.data <- process.uniprot.data(uniprot.data,speciesdb.name,species)
+  uniprot.data <- process.uniprot.data(uniprot.data,species)
   
   #----------Merge NCBI, Ensembl, species-db and Uniprot data-----------
   print("Merge NCBI, Ensembl, species-specific db and Uniprot data...")
@@ -251,31 +276,55 @@ for(species in list.species){
   
   #-----------NCBI orthologs data----------
   print("Process NCBI orthologs data...")
-  ncbi.orthologs <- process.ncbi.orthologs.data(global.ncbi.orthologs,species.taxid,
+  if(nrow(global.ncbi.orthologs)>0){
+    ncbi.orthologs <- process.ncbi.orthologs.data(global.ncbi.orthologs,species.taxid,
                       taxonomy.table,annotation.data.list)
+  } else {
+    ncbi.orthologs <- data.frame()
+  }
   
   #-----------ENSEMBL orthologs data------------
-  print("Download Ensembl orthologs data...")
-  ensembl.orthologs.folder <- gsub("gff3/","json/",ensembl.folder)
-  ensembl.orthologs.species <- strsplit(ensembl.orthologs.folder,"/")[[1]]
-  ensembl.orthologs.species <- ensembl.orthologs.species[length(ensembl.orthologs.species)]
-  list.species.taxid <- unlist(species.url$taxid)
-  filter.string.ortho.json <- paste0('[.genes[] | .id as $gene_id | .homologues[] | select(.taxonomy_id | IN(',
-      paste0(list.species.taxid[!list.species.taxid %in% species.taxid],collapse = ","),
-      ')) | {ID: $gene_id, TAXID: .taxonomy_id, ENSEMBL: .stable_id}]')
-  ensembl.orthologs <- download.json.data(paste0(ensembl.url,"current/",
-    ensembl.orthologs.folder,"/",ensembl.orthologs.species,".json"),filter.string.ortho.json)
-  print("Process Ensembl orthologs data...")
-  if(class(ensembl.orthologs)=="list"){
-    ensembl.orthologs <- data.frame(matrix(NA, nrow = 0, ncol = 3))
+  if(species.scientific.name %in% names(ensembl.folders)){
+    ensembl.url <- global.urls$ensembl
+    ensembl.folder <- ensembl.folders[species.scientific.name]
+  } else {
+    ensembl.url <- global.urls$ensemblGenomes
+    ensembl.folder <- ensembl.genome.folders[species.scientific.name]
   }
-  ensembl.orthologs <- process.ensembl.orthologs.data(ensembl.orthologs,
-    species.taxid,taxonomy.table,annotation.data.list)
+  if(!is.na(ensembl.folder)){
+    print("Download Ensembl orthologs data...")
+    ensembl.orthologs.folder <- gsub("gff3/","json/",ensembl.folder)
+    ensembl.orthologs.species <- strsplit(ensembl.orthologs.folder,"/")[[1]]
+    ensembl.orthologs.species <- ensembl.orthologs.species[length(ensembl.orthologs.species)]
+    list.species.taxid <- unlist(species.url$taxid)
+    ortho.species.taxid <- list.species.taxid[!list.species.taxid %in% species.taxid]
+    if(length(ortho.species.taxid)>0){
+      filter.string.ortho.json <- paste0('[.genes[] | .id as $gene_id | .homologues[] | select(.taxonomy_id | IN(',
+        paste0(ortho.species.taxid,collapse = ","),
+        ')) | {ID: $gene_id, TAXID: .taxonomy_id, ENSEMBL: .stable_id}]')
+      ensembl.orthologs <- download.json.data(paste0(ensembl.url,"current/",
+        ensembl.orthologs.folder,"/",ensembl.orthologs.species,".json"),filter.string.ortho.json)
+      print("Process Ensembl orthologs data...")
+      if(class(ensembl.orthologs)=="list"){
+        ensembl.orthologs <- data.frame(matrix(NA, nrow = 0, ncol = 3))
+      }
+      ensembl.orthologs <- process.ensembl.orthologs.data(ensembl.orthologs,
+        species.taxid,taxonomy.table,annotation.data.list)
+    } else {
+      ensembl.orthologs <- data.frame()
+    }
+  } else {
+    ensembl.orthologs <- data.frame()
+  }
   
   #----------ALLIANCE orthologs data----------
   print("Process Alliance of Genome orthologs data...")
-  alliance.orthologs <- process.alliance.orthologs.data(global.alliance.orthologs,
-    species.taxid,taxonomy.table)
+  if(nrow(global.alliance.orthologs)>0){
+    alliance.orthologs <- process.alliance.orthologs.data(global.alliance.orthologs,
+      species.taxid,taxonomy.table)
+  } else {
+    alliance.orthologs <- data.frame()
+  }
   
   #----------SPECIESDB orthologs data-------------
   if(!is.na(list.species.urls$speciesdb_orthologs)){
@@ -310,6 +359,8 @@ for(species in list.species){
     reactome.ncbi.data <- reactome.plant.ncbi[reactome.plant.ncbi$V6==species.scientific.name,]
     reactome.ensembl.data <- reactome.plant.ensembl[reactome.plant.ensembl$V6==species.scientific.name,]
     reactome.data <- list(ncbi=reactome.ncbi.data,ensembl=reactome.ensembl.data)
+  } else {
+    reactome.data <- list()
   }
   print("Process Reactome data...")
   reactome.data <- process.reactome.data(reactome.data,annotation.data.list,species)
@@ -323,10 +374,18 @@ for(species in list.species){
   #---------Integrate orthologs, GO and pathway data------------
   print("Merge orthologs, GO and pathway data with current annotation data...")
   annotation.data <- annotation.data.list[[species]]
-  annotation.data <- merge(annotation.data,orthologs.data,all.x=T)
-  annotation.data <- merge(annotation.data,go.data,all.x=T)
-  annotation.data <- merge(annotation.data,reactome.data,all.x=T)
-  annotation.data <- merge(annotation.data,wikipathways.data,all.x=T)
+  if(nrow(orthologs.data)>0){
+    annotation.data <- merge(annotation.data,orthologs.data,all.x=T)
+  }
+  if(nrow(go.data)>0){
+    annotation.data <- merge(annotation.data,go.data,all.x=T)
+  }
+  if(nrow(reactome.data)>0){
+    annotation.data <- merge(annotation.data,reactome.data,all.x=T)
+  }
+  if(nrow(wikipathways.data)>0){
+    annotation.data <- merge(annotation.data,wikipathways.data,all.x=T)
+  }
   annotation.data <- as.data.frame(annotation.data)
   
   #----------Write annotation DB to output file------------
@@ -376,22 +435,30 @@ for(species in list.species){
   ncbi.table <- annotation.table[,c("GID","ENTREZID")]
   ncbi.table <- ncbi.table[!is.na(ncbi.table$ENTREZID),]
   ncbi.table <- as.data.frame(ncbi.table %>% separate_rows(all_of(c("ENTREZID")),sep="\\|"))
-  build.package.args$ncbi <- ncbi.table
+  if(nrow(ncbi.table)>0){
+    build.package.args$ncbi <- ncbi.table
+  }
   #NCBI OLD
   ncbi.old.table <- annotation.table[,c("GID","ENTREZIDOLD")]
   ncbi.old.table <- ncbi.old.table[!is.na(ncbi.old.table$ENTREZIDOLD),]
   ncbi.old.table <- as.data.frame(ncbi.old.table %>% separate_rows(all_of(c("ENTREZIDOLD")),sep="\\|"))
-  build.package.args$ncbiOld <- ncbi.old.table
+  if(nrow(ncbi.old.table)>0){
+    build.package.args$ncbiOld <- ncbi.old.table
+  }
   #ENSEMBL
   ensembl.table <- annotation.table[,c("GID","ENSEMBL")]
   ensembl.table <- ensembl.table[!is.na(ensembl.table$ENSEMBL),]
   ensembl.table <- as.data.frame(ensembl.table %>% separate_rows(all_of(c("ENSEMBL")),sep="\\|"))
-  build.package.args$ensembl <- ensembl.table
+  if(nrow(ensembl.table)>0){
+    build.package.args$ensembl <- ensembl.table
+  }
   #ENSEMBL OLD
   ensembl.old.table <- annotation.table[,c("GID","ENSEMBLOLD")]
   ensembl.old.table <- ensembl.old.table[!is.na(ensembl.old.table$ENSEMBLOLD),]
   ensembl.old.table <- as.data.frame(ensembl.old.table %>% separate_rows(all_of(c("ENSEMBLOLD")),sep="\\|"))
-  build.package.args$ensemblOld <- ensembl.old.table
+  if(nrow(ensembl.old.table)>0){
+    build.package.args$ensemblOld <- ensembl.old.table
+  }
   #SPECIAL DATA
   if(!is.na(speciesdb.name)){
     speciesdb.table <- annotation.table[,c("GID",speciesdb.name)]
@@ -427,19 +494,23 @@ for(species in list.species){
     build.package.args$go <- go.table
   }
   #REACTOME PATHWAY
-  reactome.table <- annotation.table[,c("GID","REACTOMEPATH","REACTOMEPATHNAME")]
-  reactome.table <- reactome.table[!is.na(reactome.table$REACTOMEPATH),]
-  reactome.table <- as.data.frame(reactome.table %>% separate_rows(all_of(c("REACTOMEPATH","REACTOMEPATHNAME")),sep="\\|"))
-  reactome.table <- unique(reactome.table)
-  if(nrow(reactome.table)>0){
-    build.package.args$reactome <- reactome.table
+  if("REACTOMEPATH" %in% colnames(annotation.table)){
+    reactome.table <- annotation.table[,c("GID","REACTOMEPATH","REACTOMEPATHNAME")]
+    reactome.table <- reactome.table[!is.na(reactome.table$REACTOMEPATH),]
+    reactome.table <- as.data.frame(reactome.table %>% separate_rows(all_of(c("REACTOMEPATH","REACTOMEPATHNAME")),sep="\\|"))
+    reactome.table <- unique(reactome.table)
+    if(nrow(reactome.table)>0){
+      build.package.args$reactome <- reactome.table
+    }
   }
   #WIKIPATHWAYS PATHWAY
-  wikipath.table <- annotation.table[,c("GID","WIKIPATH","WIKIPATHNAME")]
-  wikipath.table <- wikipath.table[!is.na(wikipath.table$WIKIPATH),]
-  wikipath.table <- as.data.frame(wikipath.table %>% separate_rows(all_of(c("WIKIPATH","WIKIPATHNAME")),sep="\\|"))
-  if(nrow(wikipath.table)>0){
-    build.package.args$wiki <- wikipath.table
+  if("WIKIPATH" %in% colnames(annotation.table)){
+    wikipath.table <- annotation.table[,c("GID","WIKIPATH","WIKIPATHNAME")]
+    wikipath.table <- wikipath.table[!is.na(wikipath.table$WIKIPATH),]
+    wikipath.table <- as.data.frame(wikipath.table %>% separate_rows(all_of(c("WIKIPATH","WIKIPATHNAME")),sep="\\|"))
+    if(nrow(wikipath.table)>0){
+      build.package.args$wiki <- wikipath.table
+    }
   }
   #Set additional parameters for makeOrgPackage function
   build.package.args$version <- "1.0"
@@ -465,6 +536,12 @@ for(species in list.species){
   if(file.exists(gsub(".db$",".sqlite",pkg.folder))){
     file.remove(gsub(".db$",".sqlite",pkg.folder))
   }
+  #Add KEGG code to db metadata
+  Sys.chmod(final.sqlite, mode = "0644", use_umask = FALSE)
+  con <- DBI::dbConnect(RSQLite::SQLite(), final.sqlite)
+  DBI::dbExecute(con, paste0("INSERT INTO metadata (name, value) VALUES ('KEGGCODE', '",list.species.urls$kegg_code,"')"))
+  DBI::dbDisconnect(con)
+  #Save annotations to text file (if required)
   if(save.text) {
     print(paste0("Save annotation table for ",species," as text file..."))
     write.table(annotation.data,file.path(output.folder,paste0(gsub(".eg$",".db",db.name),".txt")),

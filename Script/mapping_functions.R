@@ -47,6 +47,9 @@ double.check.symbols <- function(annot.data, check.data, pivot.col, check.data.t
 
 map.keys.to.values <- function(annotation.data,list.keys,value.type,key.type){
   
+  #Remove NAs and duplicated values
+  list.keys <- unique(list.keys[!is.na(list.keys)])
+  
   #Build list of keys and values to check
   key.types <- key.type
   if(key.type %in% c("ENTREZID","ENSEMBL")){
@@ -76,7 +79,7 @@ map.keys.to.values <- function(annotation.data,list.keys,value.type,key.type){
   colnames(res.mapping)[colnames(res.mapping)=="ID"] <- key.type
   
   #Merge value columns
-  res.mapping[[value.type]] <- merge.columns(res.mapping,value.type,single.val=T)
+  res.mapping[[value.type]] <- merge.single.column(res.mapping,value.type,single.val=T)
   res.mapping <- res.mapping[,c(key.type,value.type)]
   res.mapping <- res.mapping %>% separate_rows(all_of(key.type),sep="\\|")
   res.mapping <- unique(res.mapping)

@@ -2,7 +2,7 @@ merge.ncbi.data <- function(ncbi.data,ncbi.replaced.data,ncbi.discontinued.data,
 {
   #Merge with replaced data
   ncbi.data <- merge(ncbi.data,ncbi.replaced.data,all.x=T,by.x="ENTREZID NCBI",by.y="ENTREZID")
-  ncbi.data$`ENTREZIDOLD NCBI` <- merge.columns(ncbi.data,"ENTREZIDOLD",single.val=F)
+  ncbi.data$`ENTREZIDOLD NCBI` <- merge.single.column(ncbi.data,"ENTREZIDOLD",single.val=F)
   ncbi.data$`ALIAS NCBI` <- apply(ncbi.data,1,function(row){
     if(is.na(row[["SYMBOL ARCHIVE"]])){
       row[["ALIAS NCBI"]]
@@ -17,23 +17,23 @@ merge.ncbi.data <- function(ncbi.data,ncbi.replaced.data,ncbi.discontinued.data,
   #Merge with discontinued data
   colnames(ncbi.discontinued.data)[colnames(ncbi.discontinued.data)=="ENSEMBL ARCHIVE"] <- "ENSEMBLOLD ARCHIVE"
   ncbi.data <- merge(ncbi.data,ncbi.discontinued.data,all=T)
-  ncbi.data$`ALIAS NCBI` <- merge.columns(ncbi.data,"ALIAS",single.val=F)
+  ncbi.data$`ALIAS NCBI` <- merge.single.column(ncbi.data,"ALIAS",single.val=F)
   if("LOCUS NCBI" %in% colnames(ncbi.data)){
-    ncbi.data$`LOCUS NCBI` <- merge.columns(ncbi.data,"LOCUS",single.val=F)
+    ncbi.data$`LOCUS NCBI` <- merge.single.column(ncbi.data,"LOCUS",single.val=F)
   }
-  ncbi.data$`GENETYPE NCBI` <- merge.columns(ncbi.data,"GENETYPE",single.val=T)
-  ncbi.data$`GENENAME NCBI` <- merge.columns(ncbi.data,"GENENAME",single.val=T)
-  ncbi.data$`ENSEMBLOLD NCBI` <- merge.columns(ncbi.data,"ENSEMBLOLD",single.val=F)
+  ncbi.data$`GENETYPE NCBI` <- merge.single.column(ncbi.data,"GENETYPE",single.val=T)
+  ncbi.data$`GENENAME NCBI` <- merge.single.column(ncbi.data,"GENENAME",single.val=T)
+  ncbi.data$`ENSEMBLOLD NCBI` <- merge.single.column(ncbi.data,"ENSEMBLOLD",single.val=F)
   if(!is.na(speciesdb.name)){
-    ncbi.data[[paste0(speciesdb.name," NCBI")]] <- merge.columns(ncbi.data,speciesdb.name,single.val=F)
+    ncbi.data[[paste0(speciesdb.name," NCBI")]] <- merge.single.column(ncbi.data,speciesdb.name,single.val=F)
   }
-  ncbi.data$`ENTREZIDOLD NCBI` <- merge.columns(ncbi.data,"ENTREZIDOLD",single.val=F)
+  ncbi.data$`ENTREZIDOLD NCBI` <- merge.single.column(ncbi.data,"ENTREZIDOLD",single.val=F)
   ncbi.data <- ncbi.data[,!endsWith(colnames(ncbi.data),"ARCHIVE")]
   
   return(ncbi.data)
 }
 
-merge.columns <- function(annotation.data,column,single.val)
+merge.single.column <- function(annotation.data,column,single.val)
 {
   ref.cols <- colnames(annotation.data)[startsWith(colnames(annotation.data),paste0(column," "))]
   return(apply(annotation.data,1,function(row){
@@ -76,88 +76,115 @@ rename.genetypes <- function(annotation.data)
   return(annotation.data)
 }
 
+merge.columns <- function(annotation.data){
+  #Merge columns coming from different datasets
+  annotation.data$ALIAS <- merge.single.column(annotation.data,"ALIAS",single.val=F)
+  if(any(startsWith(colnames(annotation.data),"LOCUS"))){
+    annotation.data$LOCUS <- merge.single.column(annotation.data,"LOCUS",single.val=F)
+  }
+  annotation.data$GENETYPE <- merge.single.column(annotation.data,"GENETYPE",single.val=T)
+  #if(species!="Arabidopsis"){
+    annotation.data$GENENAME <- merge.single.column(annotation.data,"GENENAME",single.val=T)
+  #}
+  annotation.data$ENTREZID <- merge.single.column(annotation.data,"ENTREZID",single.val=F)
+  annotation.data$ENSEMBL <- merge.single.column(annotation.data,"ENSEMBL",single.val=F)
+  #if(species %in% c("Tomato","Cabbage","Rapeseed")){
+    #annotation.data <- annotation.data[is.na(annotation.data$ENSEMBL) | !duplicated(annotation.data$ENSEMBL),]
+  #}
+  if(!is.na(speciesdb.name)){
+    annotation.data[[speciesdb.name]] <- merge.single.column(annotation.data,speciesdb.name,single.val=F)
+  }
+  if(any(startsWith(colnames(annotation.data),"UNIPROT"))){
+    annotation.data$UNIPROT <- merge.single.column(annotation.data,"UNIPROT",single.val=F)
+  }
+  annotation.data$ENTREZIDOLD <- merge.single.column(annotation.data,"ENTREZIDOLD",single.val=F)
+  annotation.data$ENSEMBLOLD <- merge.single.column(annotation.data,"ENSEMBLOLD",single.val=F)
+  #Select only joined columns
+  columns.to.select <- c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZID","ENSEMBL",
+                         "ENTREZIDOLD","ENSEMBLOLD")
+  if("UNIPROT" %in% colnames(annotation.data)){
+    columns.to.select <- c(columns.to.select,"UNIPROT")
+  }
+  if(!is.na(speciesdb.name)){
+    columns.to.select <- c(columns.to.select,speciesdb.name)
+  }
+  annotation.data <- annotation.data[,columns.to.select]
+  return(annotation.data)
+}
+
 merge.databases <- function(ncbi.data,ensembl.data,uniprot.data,speciesdb.data,speciesdb.name,species)
 {
-  if(species %in% c("Tomato","Cabbage","Rapeseed")){
-    
-    #Join NCBI database with UNIPROT data
-    uniprot.data.ncbi <- uniprot.data[!is.na(uniprot.data$ENTREZID),c("UNIPROT","ENTREZID","ENSEMBL","ALIAS")]
-    uniprot.data.ncbi <- uniprot.data.ncbi %>% group_by(ENTREZID) %>% summarise(across(everything(),function(x){
-      unique.info <- unique(x)
-      res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
-      ifelse(res=="",NA,res)
-    }))
-    colnames(uniprot.data.ncbi)[colnames(uniprot.data.ncbi)=="ENSEMBL"] <- "ENSEMBL UNIPROT NCBI"
-    colnames(uniprot.data.ncbi)[colnames(uniprot.data.ncbi)=="ALIAS"] <- "ALIAS UNIPROT NCBI"
-    colnames(ncbi.data)[colnames(ncbi.data)=="SYMBOL"] <- "SYMBOL NCBI"
-    colnames(ncbi.data)[colnames(ncbi.data)=="ENTREZID NCBI"] <- "ENTREZID"
-    annotation.data.ncbi <- merge(ncbi.data,uniprot.data.ncbi,all.x=T)
-    colnames(annotation.data.ncbi)[colnames(annotation.data.ncbi)=="SYMBOL NCBI"] <- "SYMBOL"
-    colnames(annotation.data.ncbi)[colnames(annotation.data.ncbi)=="UNIPROT"] <- "UNIPROT NCBI"
-    colnames(annotation.data.ncbi)[colnames(annotation.data.ncbi)=="ENTREZID"] <- "ENTREZID NCBI"
-    colnames(annotation.data.ncbi)[colnames(annotation.data.ncbi)=="ENSEMBL"] <- "ENSEMBL NCBI"
-    
-    #Join Ensembl database with UNIPROT data
-    uniprot.data.ens <- uniprot.data[!is.na(uniprot.data$ENSEMBL),]
-    uniprot.data.ens <- uniprot.data.ens %>% group_by(ENSEMBL) %>% summarise(across(everything(),function(x){
-      unique.info <- unique(x)
-      res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
-      ifelse(res=="",NA,res)
-    }))
-    colnames(uniprot.data.ens)[colnames(uniprot.data.ens)=="ENTREZID"] <- "ENTREZID UNIPROT ENS"
-    colnames(uniprot.data.ens)[colnames(uniprot.data.ens)=="SYMBOL"] <- "SYMBOL UNIPROT ENS"
-    colnames(uniprot.data.ens)[colnames(uniprot.data.ens)=="ALIAS"] <- "ALIAS UNIPROT ENS"
-    colnames(ensembl.data)[colnames(ensembl.data)=="SYMBOL"] <- "SYMBOL ENSEMBL"
-    colnames(ensembl.data)[colnames(ensembl.data)=="ENSEMBL ENSEMBL"] <- "ENSEMBL"
-    annotation.data.ens <- merge(ensembl.data,uniprot.data.ens,all.x=T)
-    annotation.data.ens$SYMBOL <- merge.columns(annotation.data.ens,"SYMBOL",single.val=T)
-    annotation.data.ens$`SYMBOL ENSEMBL` <- NULL
-    annotation.data.ens$`SYMBOL UNIPROT ENS` <- NULL
-    annotation.data.ens$ALIAS <- merge.columns(annotation.data.ens,"ALIAS",single.val=T)
-    annotation.data.ens$`ALIAS ENSEMBL` <- NULL
-    annotation.data.ens$`ALIAS UNIPROT ENS` <- NULL
-    colnames(annotation.data.ens)[colnames(annotation.data.ens)=="ENSEMBL"] <- "ENSEMBL ENSEMBL"
-    colnames(annotation.data.ens)[colnames(annotation.data.ens)=="UNIPROT"] <- "UNIPROT ENSEMBL"
-    
-    #Merge data
-    annotation.data <- merge(annotation.data.ncbi,annotation.data.ens,all=T)
-    
-  } else {
-    #Join databases on SYMBOL column
+  #Join NCBI and Ensembl data on SYMBOL column
+  if(nrow(ensembl.data)>0){
     annotation.data <- merge(ncbi.data,ensembl.data,all=T)
-    annotation.data <- merge(annotation.data,uniprot.data,all.x=T)
+  } else {
+    annotation.data <- ncbi.data
+  }
+  annotation.data <- merge.columns(annotation.data)
+  colnames(annotation.data)[colnames(annotation.data)!="SYMBOL"] <- paste0(colnames(annotation.data)[colnames(annotation.data)!="SYMBOL"]," NCBIENS")
+  
+  #Join current annotation data with Uniprot data
+  map.ncbi.ids.to.symbol <- map.keys.to.values(annotation.data,uniprot.data$ENTREZID,"SYMBOL","ENTREZID NCBIENS")
+  colnames(map.ncbi.ids.to.symbol) <- c("ENTREZID","SYMBOL UNIPROT NCBI")
+  uniprot.data <- merge(uniprot.data,map.ncbi.ids.to.symbol,all.x=T)
+  map.ens.ids.to.symbol <- map.keys.to.values(annotation.data,uniprot.data$ENSEMBL,"SYMBOL","ENSEMBL NCBIENS")
+  colnames(map.ens.ids.to.symbol) <- c("ENSEMBL","SYMBOL UNIPROT ENS")
+  uniprot.data <- merge(uniprot.data,map.ens.ids.to.symbol,all.x=T)
+  uniprot.data$SYMBOL <- ifelse(is.na(uniprot.data$`SYMBOL UNIPROT NCBI`),
+    ifelse(is.na(uniprot.data$`SYMBOL UNIPROT ENS`),uniprot.data$`SYMBOL UNIPROT`,
+           uniprot.data$`SYMBOL UNIPROT ENS`),uniprot.data$`SYMBOL UNIPROT NCBI`)
+  ref.cols.alias <- c("SYMBOL UNIPROT","SYMBOL UNIPROT NCBI","SYMBOL UNIPROT ENS")
+  uniprot.data$ALIAS <- apply(uniprot.data,1,function(row){
+    unique.info <- unname(unlist(sapply(ref.cols.alias,function(col){
+      strsplit(as.character(row[col]),"\\|")
+    })))
+    unique.info <- unique(unique.info[!is.na(unique.info)])
+    res <- paste0(unique.info,collapse="|")
+    ifelse(res=="",NA,res)
+  })
+  uniprot.data$`SYMBOL UNIPROT` <- NULL
+  uniprot.data$`SYMBOL UNIPROT NCBI` <- NULL
+  uniprot.data$`SYMBOL UNIPROT ENS` <- NULL
+  uniprot.data <- uniprot.data[!is.na(uniprot.data$SYMBOL),]
+  if(species %in% c("Rapeseed")){
+    uniprot.data[!is.na(uniprot.data$SYMBOL) & startsWith(uniprot.data$SYMBOL,"Bna"),"SYMBOL"] <- toupper(
+      uniprot.data[!is.na(uniprot.data$SYMBOL) & startsWith(uniprot.data$SYMBOL,"Bna"),"SYMBOL"])
+    uniprot.data$ALIAS <- apply(uniprot.data,1,function(row){
+      if(is.na(row[["ALIAS"]])){
+        row[["SYMBOL"]]
+      } else {
+        list.ids <- unique(c(strsplit(row[["ALIAS"]],"\\|")[[1]],row[["SYMBOL"]]))
+        paste0(list.ids,collapse = "|")
+      }
+    })
+  }
+  if(species=="ZFIN"){
+    uniprot.data[grepl("^loc[0-9]+",uniprot.data$SYMBOL),"SYMBOL"] <- toupper(uniprot.data[grepl("^loc[0-9]+",uniprot.data$SYMBOL),"SYMBOL"])
+  }
+  uniprot.data <- uniprot.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+    unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
+    res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
+    ifelse(res=="",NA,res)
+  }))
+  colnames(uniprot.data)[colnames(uniprot.data)!="SYMBOL"] <- paste0(colnames(uniprot.data)[colnames(uniprot.data)!="SYMBOL"]," UNIPROT")
+  annotation.data <- merge(annotation.data,uniprot.data,all.x=T)
+  annotation.data$`ENTREZID NCBIENSUNI` <- ifelse(is.na(annotation.data$`ENTREZID NCBIENS`),
+    annotation.data$`ENTREZID UNIPROT`,annotation.data$`ENTREZID NCBIENS`)
+  annotation.data$`ENTREZID NCBIENS` <- NULL
+  annotation.data$`ENTREZID UNIPROT` <- NULL
+  annotation.data$`ENSEMBL NCBIENSUNI` <- ifelse(is.na(annotation.data$`ENSEMBL NCBIENS`),
+    annotation.data$`ENSEMBL UNIPROT`,annotation.data$`ENSEMBL NCBIENS`)
+  annotation.data$`ENSEMBL NCBIENS` <- NULL
+  annotation.data$`ENSEMBL UNIPROT` <- NULL
+  annotation.data$`ALIAS NCBIENSUNI` <- merge.single.column(annotation.data,"ALIAS",single.val=F)
+  annotation.data$`ALIAS NCBIENS` <- NULL
+  annotation.data$`ALIAS UNIPROT` <- NULL
+  
+  #Join current data with species-specific DB data
+  if(nrow(speciesdb.data)>0){
     annotation.data <- merge(annotation.data,speciesdb.data,all.x=T)
   }
-  
-  #Merge columns coming from different datasets
-  annotation.data$ALIAS <- merge.columns(annotation.data,"ALIAS",single.val=F)
-  if("LOCUS NCBI" %in% colnames(annotation.data)){
-    annotation.data$LOCUS <- merge.columns(annotation.data,"LOCUS",single.val=F)
-  }
-  annotation.data$GENETYPE <- merge.columns(annotation.data,"GENETYPE",single.val=T)
-  if(species!="Arabidopsis"){
-    annotation.data$GENENAME <- merge.columns(annotation.data,"GENENAME",single.val=T)
-  }
-  annotation.data$ENTREZID <- merge.columns(annotation.data,"ENTREZID",single.val=F)
-  annotation.data$ENSEMBL <- merge.columns(annotation.data,"ENSEMBL",single.val=F)
-  if(species %in% c("Tomato","Cabbage","Rapeseed")){
-    annotation.data <- annotation.data[is.na(annotation.data$ENSEMBL) | !duplicated(annotation.data$ENSEMBL),]
-  }
-  if(!is.na(speciesdb.name)){
-    annotation.data[[speciesdb.name]] <- merge.columns(annotation.data,speciesdb.name,single.val=F)
-  }
-  annotation.data$UNIPROT <- merge.columns(annotation.data,"UNIPROT",single.val=F)
-  annotation.data$ENTREZIDOLD <- merge.columns(annotation.data,"ENTREZIDOLD",single.val=F)
-  annotation.data$ENSEMBLOLD <- merge.columns(annotation.data,"ENSEMBLOLD",single.val=F)
-  
-  #Select only joined columns
-  if(!is.na(speciesdb.name)){
-    annotation.data <- annotation.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZID","ENSEMBL",speciesdb.name,
-                                          "UNIPROT","ENTREZIDOLD","ENSEMBLOLD")]
-  } else {
-    annotation.data <- annotation.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZID","ENSEMBL",
-                                          "UNIPROT","ENTREZIDOLD","ENSEMBLOLD")]
-  }
+  annotation.data <- merge.columns(annotation.data)
   
   #Fix GENETYPE categories
   annotation.data <- rename.genetypes(annotation.data)
@@ -189,7 +216,7 @@ merge.databases <- function(ncbi.data,ensembl.data,uniprot.data,speciesdb.data,s
   return(annotation.data)
 }
 
-merge.ortho.databases <- function(ncbi.orthologs,ensembl.orthologs,alliance.orthologs,speciesdb.orthologs,taxid,taxonomy.table)
+merge.ortho.databases <- function(ncbi.orthologs,ensembl.orthologs,alliance.orthologs,speciesdb.orthologs,species.taxid,taxonomy.table)
 {
   #Join databases on SYMBOL column
   if(nrow(ncbi.orthologs)>0){
@@ -197,35 +224,43 @@ merge.ortho.databases <- function(ncbi.orthologs,ensembl.orthologs,alliance.orth
   } else {
     orthologs.data <- ensembl.orthologs
   }
-  if(nrow(alliance.orthologs)>0){
-    orthologs.data <- merge(orthologs.data,alliance.orthologs,all=T)
-  }
-  if(nrow(speciesdb.orthologs)>0){
-    orthologs.data <- merge(orthologs.data,speciesdb.orthologs,all=T)
-  }
-  
-  #Merge columns coming from different datasets
-  for(i in 1:nrow(taxonomy.table)) {
-    if(all(unlist(taxonomy.table[i,"taxid"])!=taxid)){
-      orthologs.data[[paste0("ORTHO",toupper(taxonomy.table[i,"species"]))]] <- merge.columns(orthologs.data,
-                                          paste0("ORTHO",toupper(taxonomy.table[i,"species"])),single.val=F)
+  if(nrow(orthologs.data)>0){
+    if(nrow(alliance.orthologs)>0){
+      orthologs.data <- merge(orthologs.data,alliance.orthologs,all=T)
     }
+  } else {
+    orthologs.data <- alliance.orthologs
   }
-  
-  #Select only joined columns
-  valid.pos <- sapply(taxonomy.table$taxid, function(x) all(!x %in% taxid))
-  orthologs.data <- orthologs.data[,c("SYMBOL",paste0("ORTHO",toupper(taxonomy.table[valid.pos,"species"])))]
-  
+  if(nrow(orthologs.data)>0){
+    if(nrow(speciesdb.orthologs)>0){
+      orthologs.data <- merge(orthologs.data,speciesdb.orthologs,all=T)
+    }
+  } else {
+    orthologs.data <- speciesdb.orthologs
+  }
+  if(nrow(orthologs.data)>0){
+    #Merge columns coming from different datasets
+    for(i in 1:nrow(taxonomy.table)) {
+      if(all(unlist(taxonomy.table[i,"taxid"])!=species.taxid)){
+        orthologs.data[[paste0("ORTHO",toupper(taxonomy.table[i,"species"]))]] <- merge.single.column(orthologs.data,
+                                          paste0("ORTHO",toupper(taxonomy.table[i,"species"])),single.val=F)
+      }
+    }
+    #Select only joined columns
+    valid.pos <- sapply(taxonomy.table$taxid, function(x) all(!x %in% species.taxid))
+    orthologs.data <- orthologs.data[,c("SYMBOL",paste0("ORTHO",toupper(taxonomy.table[valid.pos,"species"])))]
+  }
   return(as.data.frame(orthologs.data))
 }
 
 merge.with.ensembl.archive.data <- function(ensembl.data,ensembl.archive.data,species,speciesdb.name,
-                                            ncbi.data,hcop.data,taxid)
+                                            ncbi.data,hcop.data,species.taxid)
 {
   list.versions <- sort(as.numeric(names(ensembl.archive.data)),decreasing=T)
   for(i in list.versions){
     ens.data <- ensembl.archive.data[[as.character(i)]]
-    #print(paste0("Merging Ensembl version ",i,"..."))
+    ens.data <- ens.data[!is.na(ens.data$gene_id),]
+    print(paste0("Merging Ensembl version ",i,"..."))
     if(nrow(ens.data)>0){
       
       #Get current list of ensembl ids (OLD and NEW)
@@ -236,44 +271,49 @@ merge.with.ensembl.archive.data <- function(ensembl.data,ensembl.archive.data,sp
       list.ensembl.old.ids <- (ensembl.data %>% separate_rows(all_of(c("ENSEMBLOLD ENSEMBL")),sep="\\|"))$`ENSEMBLOLD ENSEMBL`
       list.ensembl.old.ids <- unique(list.ensembl.old.ids[!is.na(list.ensembl.old.ids)])
       list.curr.ens.ids <- unique(c(list.ncbi.ens.ids,list.ensembl.ids,list.ensembl.old.ids))
-    
-      #Process archive data
-      ensembl.archive <- process.ensembl.data(ens.data,speciesdb.name,ncbi.data,hcop.data,taxid,is.archive=T)
-      if(species=="Arabidopsis"){
-        colnames(ensembl.archive) <- c("SYMBOL","GENENAME","ALIAS ARCHIVE","GENETYPE ARCHIVE","ENSEMBL ARCHIVE")
-      } else {
-        colnames(ensembl.archive) <- c("SYMBOL","ALIAS ARCHIVE","GENETYPE ARCHIVE","GENENAME ARCHIVE","ENSEMBL ARCHIVE")
-      }
-    
       #Filter out ensembl ids that are already present in current annotations
-      colnames(ensembl.archive)[colnames(ensembl.archive)=="ENSEMBL ARCHIVE"] <- "ENSEMBLOLD ARCHIVE"
-      ensembl.archive.extended <- ensembl.archive %>% separate_rows(all_of("ENSEMBLOLD ARCHIVE"),sep="\\|")
-      ensembl.archive.extended <- ensembl.archive.extended[!ensembl.archive.extended$`ENSEMBLOLD ARCHIVE` %in% list.curr.ens.ids,]
-      if(species=="Arabidopsis"){
-        ensembl.archive <- ensembl.archive.extended %>% group_by(SYMBOL,GENENAME) %>% summarise(across(everything(),function(x){
-          unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
-          res <- paste0(sort(unique.info[!is.na(unique.info)]),collapse="|")
-          ifelse(res=="",NA,res)
-        }))
-      } else {
-        ensembl.archive <- ensembl.archive.extended %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
-          unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
-          res <- paste0(sort(unique.info[!is.na(unique.info)]),collapse="|")
-          ifelse(res=="",NA,res)
-        }))
-      }
-    
-      #Integrate with current annotation db
-      if(nrow(ensembl.archive)>0){
-        ensembl.data <- merge(ensembl.data,ensembl.archive,all=T)
-        ensembl.data$`ALIAS ENSEMBL` <- merge.columns(ensembl.data,"ALIAS",single.val=F)
-        ensembl.data$`GENETYPE ENSEMBL` <- merge.columns(ensembl.data,"GENETYPE",single.val=T)
-        if(!is.na(speciesdb.name) && speciesdb.name!="TAIR"){
-          ensembl.data$`GENENAME ENSEMBL` <- merge.columns(ensembl.data,"GENENAME",single.val=T)
+      ens.data <- ens.data[!ens.data$gene_id %in% list.curr.ens.ids,]
+      #Filter out RNAs
+      ens.data[startsWith(ens.data$gene_id,"ENSRNA"),"gene_id"] <- NA
+      ens.data <- ens.data[!is.na(ens.data$gene_id),]
+      
+      if(nrow(ens.data)>0){
+        #Process archive data
+        ensembl.archive <- process.ensembl.data(ens.data,speciesdb.name,ncbi.data,hcop.data,species.taxid,is.archive=T)
+        if(species=="Arabidopsis"){
+          colnames(ensembl.archive) <- c("SYMBOL","GENENAME","ALIAS ARCHIVE","GENETYPE ARCHIVE","ENSEMBL ARCHIVE")
+        } else {
+          colnames(ensembl.archive) <- c("SYMBOL","ALIAS ARCHIVE","GENETYPE ARCHIVE","GENENAME ARCHIVE","ENSEMBL ARCHIVE")
         }
-        ensembl.data$`ENSEMBLOLD ENSEMBL` <- merge.columns(ensembl.data,"ENSEMBLOLD",single.val=F)
-        ensembl.data <- ensembl.data[,!endsWith(colnames(ensembl.data),"ARCHIVE")]
-        print(paste0("Integrated ",nrow(ensembl.archive)," rows from Ensembl version ",i,"..."))
+        #Filter out ensembl ids that are already present in current annotations
+        colnames(ensembl.archive)[colnames(ensembl.archive)=="ENSEMBL ARCHIVE"] <- "ENSEMBLOLD ARCHIVE"
+        ensembl.archive.extended <- ensembl.archive %>% separate_rows(all_of("ENSEMBLOLD ARCHIVE"),sep="\\|")
+        ensembl.archive.extended <- ensembl.archive.extended[!ensembl.archive.extended$`ENSEMBLOLD ARCHIVE` %in% list.curr.ens.ids,]
+        if(species=="Arabidopsis"){
+          ensembl.archive <- ensembl.archive.extended %>% group_by(SYMBOL,GENENAME) %>% summarise(across(everything(),function(x){
+            unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
+            res <- paste0(sort(unique.info[!is.na(unique.info)]),collapse="|")
+            ifelse(res=="",NA,res)
+          }))
+        } else {
+          ensembl.archive <- ensembl.archive.extended %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+            unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
+            res <- paste0(sort(unique.info[!is.na(unique.info)]),collapse="|")
+            ifelse(res=="",NA,res)
+          }))
+        }
+        #Integrate with current annotation db
+        if(nrow(ensembl.archive)>0){
+          ensembl.data <- merge(ensembl.data,ensembl.archive,all=T)
+          ensembl.data$`ALIAS ENSEMBL` <- merge.single.column(ensembl.data,"ALIAS",single.val=F)
+          ensembl.data$`GENETYPE ENSEMBL` <- merge.single.column(ensembl.data,"GENETYPE",single.val=T)
+          if(!is.na(speciesdb.name) && speciesdb.name!="TAIR"){
+            ensembl.data$`GENENAME ENSEMBL` <- merge.single.column(ensembl.data,"GENENAME",single.val=T)
+          }
+          ensembl.data$`ENSEMBLOLD ENSEMBL` <- merge.single.column(ensembl.data,"ENSEMBLOLD",single.val=F)
+          ensembl.data <- ensembl.data[,!endsWith(colnames(ensembl.data),"ARCHIVE")]
+          print(paste0("Integrated ",nrow(ensembl.archive)," rows from Ensembl version ",i,"..."))
+        }
       }
     }
   }
@@ -313,12 +353,12 @@ merge.with.ensembl.grch37.data <- function(ensembl.data,ensembl.grch37.data,ncbi
   }))
   if(nrow(ensembl.archive)>0){
     ensembl.data <- merge(ensembl.data,ensembl.archive,all=T)
-    ensembl.data$`ALIAS ENSEMBL` <- merge.columns(ensembl.data,"ALIAS",single.val=F)
-    ensembl.data$`GENETYPE ENSEMBL` <- merge.columns(ensembl.data,"GENETYPE",single.val=T)
+    ensembl.data$`ALIAS ENSEMBL` <- merge.single.column(ensembl.data,"ALIAS",single.val=F)
+    ensembl.data$`GENETYPE ENSEMBL` <- merge.single.column(ensembl.data,"GENETYPE",single.val=T)
     if(speciesdb.name!="TAIR"){
-      ensembl.data$`GENENAME ENSEMBL` <- merge.columns(ensembl.data,"GENENAME",single.val=T)
+      ensembl.data$`GENENAME ENSEMBL` <- merge.single.column(ensembl.data,"GENENAME",single.val=T)
     }
-    ensembl.data$`ENSEMBLOLD ENSEMBL` <- merge.columns(ensembl.data,"ENSEMBLOLD",single.val=F)
+    ensembl.data$`ENSEMBLOLD ENSEMBL` <- merge.single.column(ensembl.data,"ENSEMBLOLD",single.val=F)
     ensembl.data <- ensembl.data[,!endsWith(colnames(ensembl.data),"ARCHIVE")]
   }
   

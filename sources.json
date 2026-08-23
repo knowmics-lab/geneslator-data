@@ -5,6 +5,7 @@
     "ensembl": "https://ftp.ensembl.org/pub/",
     "ensemblGenomes": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/",
     "uniprot": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/",
+    "uniprot_alternative": "https://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/",
     "alliance_genome_orthologs": "https://fms.alliancegenome.org/download/ORTHOLOGY-ALLIANCE_COMBINED.tsv.gz",
     "go_dictionary": "https://purl.obolibrary.org/obo/go.obo",
     "reactome": "https://reactome.org/download/current/",
@@ -16,6 +17,7 @@
       "species": "Human",
       "official_name": "Homo sapiens",
       "taxid": 9606,
+      "kegg_code": "hsa",
       "speciesdb_name": "HGNC",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz",
       "ensembl_grch37": "https://ftp.ensembl.org/pub/grch37/current/gtf/homo_sapiens/Homo_sapiens.GRCh37.87.gtf.gz",
@@ -27,6 +29,7 @@
       "species": "Mouse",
       "official_name": "Mus musculus",
       "taxid": 10090,
+      "kegg_code": "mmu",
       "speciesdb_name": "MGI",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Mus_musculus.gene_info.gz",
       "speciesdb": "http://www.informatics.jax.org/downloads/reports/MRK_List2.rpt",
@@ -36,6 +39,7 @@
       "species": "Rat",
       "official_name": "Rattus norvegicus",
       "taxid": 10116,
+      "kegg_code": "rno",
       "speciesdb_name": "RGD",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Rattus_norvegicus.gene_info.gz",
       "speciesdb": "https://download.rgd.mcw.edu/pub/data_release/GENES_RAT.txt",
@@ -45,6 +49,7 @@
       "species": "Zebrafish",
       "official_name": "Danio rerio",
       "taxid": 7955,
+      "kegg_code": "dre",
       "speciesdb_name": "ZFIN",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Non-mammalian_vertebrates/Danio_rerio.gene_info.gz",
       "speciesdb": "https://zfin.org/downloads/zfin_genes.gff3",
@@ -54,6 +59,7 @@
       "species": "Fly",
       "official_name": "Drosophila melanogaster",
       "taxid": 7227,
+      "kegg_code": "dme",
       "speciesdb_name": "FLYBASE",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/Drosophila_melanogaster.gene_info.gz",
       "speciesdb": "https://s3ftp.flybase.org/releases/current/precomputed_files/genes/",
@@ -63,6 +69,7 @@
       "species": "Worm",
       "official_name": "Caenorhabditis elegans",
       "taxid": 6239,
+      "kegg_code": "cel",
       "speciesdb_name": "WORMBASE",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/Caenorhabditis_elegans.gene_info.gz",
       "speciesdb": "https://fms.alliancegenome.org/download/BGI_WB.json.gz",
@@ -72,6 +79,7 @@
       "species": "Yeast",
       "official_name": "Saccharomyces cerevisiae",
       "taxid": 559292,
+      "kegg_code": "sce",
       "speciesdb_name": "SGD",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Fungi/Saccharomyces_cerevisiae.gene_info.gz",
       "speciesdb": "http://sgd-archive.yeastgenome.org/curation/chromosomal_feature/saccharomyces_cerevisiae.gff.gz",
@@ -81,6 +89,7 @@
       "species": "Arabidopsis",
       "official_name": "Arabidopsis thaliana",
       "taxid": 3702,
+      "kegg_code": "ath",
       "speciesdb_name": "TAIR",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Arabidopsis_thaliana.gene_info.gz",
       "speciesdb": "https://www.arabidopsis.org/api/download-files/list?dir=Genes/Araport11_genome_release/",
@@ -90,6 +99,7 @@
       "species": "Cabbage",
       "official_name": "Brassica oleracea",
       "taxid": [3712,109376],
+      "kegg_code": "boe",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
       "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/435602.B_oleracea_var_oleracea.goa"
     },
@@ -97,6 +107,7 @@
       "species": "Rapeseed",
       "official_name": "Brassica napus",
       "taxid": 3708,
+      "kegg_code": "bna",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
       "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/388940.B_napus_Rape.goa"
     },
@@ -104,6 +115,7 @@
       "species": "Tomato",
       "official_name": "Solanum lycopersicum",
       "taxid": 4081,
+      "kegg_code": "sly",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
       "go": "https://current.geneontology.org/annotations/gaf/SOLLC-uniprot.gaf.gz"
     },
@@ -111,6 +123,7 @@
       "species": "Grapevine",
       "official_name": "Vitis vinifera",
       "taxid": 29760,
+      "kegg_code": "vvi",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
       "go": "https://current.geneontology.org/annotations/gaf/VITVI-uniprot.gaf.gz"
     },
@@ -118,6 +131,7 @@
       "species": "BlueLupin",
       "official_name": "Lupinus angustifolius",
       "taxid": 3871,
+      "kegg_code": "lang",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
       "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/4101492.L_angustifolius_Narrow-leaved_blue_lupine.goa"
     },
@@ -125,8 +139,53 @@
       "species": "CommonBean",
       "official_name": "Phaseolus vulgaris",
       "taxid": 3885,
+      "kegg_code": "pvu",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/All_Plants.gene_info.gz",
       "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/29213.P_vulgaris_Negro_Jamapa.goa"
+    },
+    {
+      "species": "Macaque",
+      "official_name": "Macaca mulatta",
+      "taxid": 9544,
+      "kegg_code": "mcc",
+      "speciesdb_name": "VGNC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/All_Mammalia.gene_info.gz",
+      "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
+      "go": "https://current.geneontology.org/annotations/gaf/MACMU-uniprot.gaf.gz"
+    },
+    {
+      "species": "HoneyBee",
+      "official_name": "Apis mellifera",
+      "taxid": 7460,
+      "kegg_code": "ame",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/All_Invertebrates.gene_info.gz",
+      "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/4859278.A_mellifera.goa"
+    },
+    {
+      "species": "AfricanClawedFrog",
+      "official_name": "Xenopus laevis",
+      "taxid": 8355,
+      "kegg_code": "xla",
+      "speciesdb_name": "XENBASE",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Non-mammalian_vertebrates/Xenopus_laevis.gene_info.gz",
+      "speciesdb": "https://download.xenbase.org/xenbase/GenePageReports/xenbase_v1.2.gpi.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/XENLA-uniprot.gaf.gz"
+    },
+    {
+      "species": "Rice",
+      "official_name": "Oryza sativa",
+      "taxid": 39947,
+      "kegg_code": "osa",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Oryza_sativa.gene_info.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/ORYSJ-uniprot.gaf.gz"
+    },
+    {
+      "species": "Maize",
+      "official_name": "Zea mays",
+      "taxid": 4577,
+      "kegg_code": "zma",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Zea_mays.gene_info.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/MAIZE-uniprot.gaf.gz"
     }
   ]
 }

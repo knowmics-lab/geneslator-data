@@ -6,7 +6,7 @@ Sources used to download raw annotation data for all species are reported in the
 
 ## Usage examples
 
-To run the main script (`build_geneslator_data.R`), R (R>=4.6) is required. It can be installed from [<https://cran.r-project.org/>](<https://cran.r-project.org/>). 
+To run the main script (`build_geneslator_data.R`), R (R>=4.6) is required. It can be installed from [<https://cran.r-project.org/>](<https://cran.r-project.org/>). The script requires several hours to complete.
 
 ```bash
 #Run the script with default output folder ("Output") for final annotation tables.
@@ -26,13 +26,35 @@ Rscript build_geneslator_data.R --folder AnnotFiles --saveTxt
 
 ![Geneslator's workflow](https://github.com/user-attachments/assets/f6c741a6-0bed-4c3b-b04b-4620f2940b71)
 
-Currently, annotation databases have been built for the following 8 model organisms: Human (Homo sapiens), Mouse (Mus musculus), Rat (Rattus norvegicus), Fly (Drosophila melanogaster ), Zebrafish (Danio rerio), Yeast (Saccharomyces cerevisiae), Worm (Caenorhabditis elegans), and Arabidopsis (Arabidopsis thaliana). More organisms will be included in future releases of **geneslator**.
+Currently, annotation databases have been built for the following 19 model organisms: 
+
+- *Homo sapiens* (Human)
+- *Mus musculus* (Mouse)
+- *Rattus norvegicus* (Rat)
+- *Danio rerio* (Zebrafish)
+- *Drosophila melanogaster* (Fly)
+- *Caenorhabditis elegans* (Worm)
+- *Saccharomyces cerevisiae* (Yeast)
+- *Arabidopsis thaliana* (Arabidopsis)
+- *Brassica oleracea* (Cabbage)
+- *Brassica napus* (Rapeseed)
+- *Solanum lycopersicum* (Tomato)
+- *Vitis vinifera* (Grapevine)
+- *Lupinus angustifolius* (Blue Lupin)
+- *Phaseolus vulgaris* (Common Bean)
+- *Macaca mulatta* (Macaque)
+- *Apis mellifera* (Honey Bee)
+- *Xenopus laevis* (African Clawed Frog)
+- *Oryza sativa* (Rice)
+- *Zea mays* (Maize)
+
+More organisms will be included in future releases of **geneslator**.
 
 ### Data sources
 
 General information about a gene (symbol, aliases, full name, and genetype) are extracted from NCBI Gene and Ensembl. Genetype represents the biotype classification of a gene (e.g., “protein-coding gene”, “non-coding RNA”, “pseudogene”, “lncRNA”). Databases for A.thaliana, C.elegans, D.melanogaster, and S.cerevisiae also include locus tag identifiers. 
 
-Identifiers of a gene include Entrez GeneIDs (taken from NCBI), Ensembl GeneIDs (taken from NCBI and Ensembl), Uniprot IDs of its proteins (taken from Uniprot) and species-specific identifiers, coming from the most popular species-specific genome database, namely HGNC for Human, MGI for Mouse, RGD for Rat, SGD for Yeast, WormBase for Worm, FlyBase for Fly, ZFIN for Zebrafish and TAIR for Arabidopsis. For Zebrafish, we also collect Ensembl GeneID and Gene symbols data from HCOP. 
+Identifiers of a gene include Entrez GeneIDs (taken from NCBI), Ensembl GeneIDs (taken from NCBI and Ensembl), Uniprot IDs of its proteins (taken from Uniprot) and species-specific identifiers, coming from the most popular species-specific genome database, e.g HGNC for Human, MGI for Mouse, RGD for Rat, SGD for Yeast, WormBase for Worm, FlyBase for Fly, ZFIN for Zebrafish, TAIR for Arabidopsis, VGNC for Macaque and Xenbase for Frog. For Zebrafish, we also collect Ensembl GeneID and Gene symbols data from HCOP. 
 
 **geneslator** annotation databases also integrates old discontinued and replaced gene identifiers from NCBI gene and Ensembl (starting from v.28 for Arabidopsis and from v.81 in the other organisms). These archived identifiers are stored in different columns with respect to current identifiers.
 

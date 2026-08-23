@@ -1,6 +1,6 @@
 options(timeout = max(3600, getOption("timeout")))
 
-download.annot.file <- function(url,max.retries = 5, retry.delay = 10){
+download.annot.file <- function(url,max.retries = 5, retry.delay = 10,alternative.url=NULL){
   temp.file <- tempfile(fileext = paste0(".",tools::file_ext(url)))
   attempt <- 0
   success <- FALSE
@@ -22,13 +22,32 @@ download.annot.file <- function(url,max.retries = 5, retry.delay = 10){
         warning(w)  # Propagate unrelated warnings
       }
     })
+    if(!success && !is.null(alternative.url)){
+      #Try alternative URL for download
+      tryCatch({
+        download.file(alternative.url, temp.file, method = "libcurl")
+        success <- TRUE
+      }, error = function(e) {
+        message(paste0("Error during download: ", e$message))
+        Sys.sleep(10)
+      }, warning = function(w) {
+        # Catch "downloaded length != reported length" warning
+        if (grepl("lunghezza scaricata|downloaded length|Failure when receiving", w$message)) {
+          message(paste0("Incomplete download detected: ", w$message,
+                         ". Retrying in ", retry.delay, "s..."))
+          Sys.sleep(10)
+        } else {
+          warning(w)  # Propagate unrelated warnings
+        }
+      })
+    }
   }
   return(temp.file)
 }
 
-download.tabular.data <- function(url, header="auto",skip=0)
+download.tabular.data <- function(url, header="auto",skip=0,alternative.url=NULL)
 {
-  file <- download.annot.file(url)
+  file <- download.annot.file(url,alternative.url=alternative.url)
   tabular.data <- fread(file,header=header,data.table=F,showProgress=F,skip=skip)
   tabular.data[tabular.data==""] <- NA
   file.remove(file)
