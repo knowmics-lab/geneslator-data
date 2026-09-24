@@ -45,7 +45,7 @@ double.check.symbols <- function(annot.data, check.data, pivot.col, check.data.t
   return(annot.data)
 }
 
-map.keys.to.values <- function(annotation.data,list.keys,value.type,key.type){
+map.keys.to.values <- function(annotation.data,list.keys,value.types,key.type){
   
   #Remove NAs and duplicated values
   list.keys <- unique(list.keys[!is.na(list.keys)])
@@ -58,9 +58,12 @@ map.keys.to.values <- function(annotation.data,list.keys,value.type,key.type){
   if(key.type=="SYMBOL"){
     key.types <- c(key.types,"ALIAS")
   }
-  value.types <- value.type
-  if(value.type %in% c("ENTREZID","ENSEMBL")){
-    value.types <- c(value.types,paste0(value.type,"OLD"))
+  values.list <- list()
+  for(vt in value.types){
+    values.list[[vt]] <- vt
+    if(vt %in% c("ENTREZID","ENSEMBL")){
+      value.list[[vt]] <- c(values.list[[vt]],paste0(vt,"OLD"))
+    }
   }
   
   #Run queries
@@ -69,21 +72,24 @@ map.keys.to.values <- function(annotation.data,list.keys,value.type,key.type){
   for(kt in key.types){
     annot.data.ext <- annotation.data %>% separate_rows(all_of(kt),sep="\\|")
     annot.data.ext <- annot.data.ext[!is.na(annot.data.ext[[kt]]),]
-    for(vt in value.types){
-      annot.data.ext.sub <- annot.data.ext[,c(kt,vt)]
+    for(value in value.types){
+      annot.data.ext.sub <- annot.data.ext[,c(kt,values.list[[value]])]
       res.mapping <- merge(res.mapping,annot.data.ext.sub,by.x="ID",by.y=kt,all.x=T)
-      colnames(res.mapping)[colnames(res.mapping)==vt] <- paste0(value.type," ",LETTERS[i])
-      i <- i+1
+      for(vt in values.list[[value]]){
+        colnames(res.mapping)[colnames(res.mapping)==vt] <- paste0(value," ",LETTERS[i])
+        i <- i+1
+      }
     }
   }
   colnames(res.mapping)[colnames(res.mapping)=="ID"] <- key.type
   
   #Merge value columns
-  res.mapping[[value.type]] <- merge.single.column(res.mapping,value.type,single.val=T)
-  res.mapping <- res.mapping[,c(key.type,value.type)]
+  for(value in value.types){
+    res.mapping[[value]] <- merge.single.column(res.mapping,value,single.val=T)
+  }
+  res.mapping <- res.mapping[,c(key.type,value.types)]
   res.mapping <- res.mapping %>% separate_rows(all_of(key.type),sep="\\|")
   res.mapping <- unique(res.mapping)
-  
   return(res.mapping)
 }
 

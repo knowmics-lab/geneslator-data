@@ -2,8 +2,10 @@
   "global_sources": {
     "ncbi_archive": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_history.gz",
     "ncbi_orthologs": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_orthologs.gz",
+    "hgnc_orthologs": "https://storage.googleapis.com/public-download-files/hcop/human_all_hcop_seven_column.txt.gz",
     "ensembl": "https://ftp.ensembl.org/pub/",
     "ensemblGenomes": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/",
+    "ensembl_grch37": "https://ftp.ensembl.org/pub/grch37/current/gtf/homo_sapiens/Homo_sapiens.GRCh37.87.gtf.gz",
     "uniprot": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/",
     "uniprot_alternative": "https://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/",
     "alliance_genome_orthologs": "https://fms.alliancegenome.org/download/ORTHOLOGY-ALLIANCE_COMBINED.tsv.gz",
@@ -20,9 +22,7 @@
       "kegg_code": "hsa",
       "speciesdb_name": "HGNC",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz",
-      "ensembl_grch37": "https://ftp.ensembl.org/pub/grch37/current/gtf/homo_sapiens/Homo_sapiens.GRCh37.87.gtf.gz",
       "speciesdb": "https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt",
-      "speciesdb_orthologs": "https://storage.googleapis.com/public-download-files/hcop/human_all_hcop_seven_column.txt.gz",
       "go": "https://current.geneontology.org/annotations/gaf/HUMAN-uniprot.gaf.gz"
     },
     {
@@ -158,7 +158,9 @@
       "official_name": "Apis mellifera",
       "taxid": 7460,
       "kegg_code": "ame",
+      "speciesdb_name": "BEEBASE",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/All_Invertebrates.gene_info.gz",
+      "speciesdb": "https://data.elsiklab.missouri.edu/downloads/hgd/gene_gff3/refseq",
       "go": "https://ftp.ebi.ac.uk/pub/databases/GO/goa/proteomes/4859278.A_mellifera.goa"
     },
     {
@@ -176,7 +178,9 @@
       "official_name": "Oryza sativa",
       "taxid": 39947,
       "kegg_code": "osa",
+      "speciesdb_name": "RAP",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Oryza_sativa.gene_info.gz",
+      "speciesdb": "https://shigen.nig.ac.jp/rice/oryzabase/gene/download?classtag=GENE_EN_LIST",
       "go": "https://current.geneontology.org/annotations/gaf/ORYSJ-uniprot.gaf.gz"
     },
     {
@@ -184,8 +188,69 @@
       "official_name": "Zea mays",
       "taxid": 4577,
       "kegg_code": "zma",
+      "speciesdb_name": "MAIZEGDB",
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Zea_mays.gene_info.gz",
+      "speciesdb": "https://download.maizegdb.org",
       "go": "https://current.geneontology.org/annotations/gaf/MAIZE-uniprot.gaf.gz"
+    },
+    {
+      "species": "TropicalClawedFrog",
+      "official_name": "Xenopus tropicalis",
+      "taxid": 8364,
+      "kegg_code": "xtr",
+      "speciesdb_name": "XENBASE",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Non-mammalian_vertebrates/Xenopus_tropicalis.gene_info.gz",
+      "speciesdb": "https://download.xenbase.org/xenbase/GenePageReports/xenbase_v1.2.gpi.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/XENTR-uniprot.gaf.gz"
+    },
+    {
+      "species": "FissionYeast",
+      "official_name": "Schizosaccharomyces pombe",
+      "taxid": [4896,284812],
+      "kegg_code": "spo",
+      "speciesdb_name": "POMBASE",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Fungi/All_Fungi.gene_info.gz",
+      "speciesdb": "https://www.pombase.org/monthly_releases",
+      "go": "https://current.geneontology.org/annotations/gaf/SCHPO-uniprot.gaf.gz"
+    },
+    {
+      "species": "EcoliK12",
+      "official_name": "Escherichia coli K12 MG1655",
+      "taxid": [83333,511145],
+      "kegg_code": "eco",
+      "speciesdb_name": "ECOCYC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Archaea_Bacteria/Escherichia_coli_str._K-12_substr._MG1655.gene_info.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/ECOLI-uniprot.gaf.gz"
+    },
+    {
+      "species": "Chicken",
+      "official_name": "Gallus gallus",
+      "taxid": 9031,
+      "kegg_code": "gga",
+      "speciesdb_name": "CGNC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Non-mammalian_vertebrates/Gallus_gallus.gene_info.gz",
+      "speciesdb": "https://www.birdgenenames.org/downloads.jsp?file=standard",
+      "go": "https://current.geneontology.org/annotations/gaf/CHICK-uniprot.gaf.gz"
+    },
+    {
+      "species": "Dog",
+      "official_name": "Canis lupus familiaris",
+      "taxid": 9615,
+      "kegg_code": "cfa",
+      "speciesdb_name": "VGNC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Canis_familiaris.gene_info.gz",
+      "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
+      "go": "https://current.geneontology.org/annotations/gaf/CANLF-uniprot.gaf.gz"
+    },
+    {
+      "species": "Cattle",
+      "official_name": "Bos taurus",
+      "taxid": 9913,
+      "kegg_code": "bta",
+      "speciesdb_name": "VGNC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Bos_taurus.gene_info.gz",
+      "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
+      "go": "https://current.geneontology.org/annotations/gaf/BOVIN-uniprot.gaf.gz"
     }
   ]
 }

@@ -22,30 +22,36 @@ Rscript build_geneslator_data.R --folder AnnotFiles --saveTxt
 
 ## How it works
 
-**geneslator** is a comprehensive R package for gene identifier conversion and genome annotation across multiple model organisms. The package integrates data from several cross-organism databases and organism-specific resources within a single, coherent framework. Four different types of data about a gene are integrated: annotations from general databases (symbol, aliases, full name, genetype), annotations from species-specific databases, functional annotations (pathways and gene ontologies), and orthologs.
+**geneslator** is a comprehensive R package for gene identifier conversion and genome annotation across multiple model organisms. The package integrates data from several cross-organism databases and organism-specific resources within a single, coherent framework. Four different types of data about a gene are integrated: annotations from general databases (symbol, aliases, full name, genetype), annotations from species-specific databases, functional annotations (pathways and gene ontologies) and orthologs.
 
 ![Geneslator's workflow](https://github.com/user-attachments/assets/f6c741a6-0bed-4c3b-b04b-4620f2940b71)
 
-Currently, annotation databases have been built for the following 19 model organisms: 
+Currently, annotation databases have been built for the following 25 model organisms: 
 
-- *Homo sapiens* (Human)
-- *Mus musculus* (Mouse)
-- *Rattus norvegicus* (Rat)
+- *Apis mellifera* (Honey Bee)
+- *Arabidopsis thaliana* (Arabidopsis)
+- *Bos taurus* (Cattle)
+- *Brassica napus* (Rapeseed)
+- *Brassica oleracea* (Cabbage)
+- *Caenorhabditis elegans* (Worm)
+- *Canis lupus familiaris* (Dog)
 - *Danio rerio* (Zebrafish)
 - *Drosophila melanogaster* (Fly)
-- *Caenorhabditis elegans* (Worm)
+- *Escherichia coli K12 MG1655* (Ecoli K12)
+- *Gallus gallus* (Chicken)
+- *Homo sapiens* (Human)
+- *Lupinus angustifolius* (Blue Lupin)
+- *Macaca mulatta* (Macaque)
+- *Mus musculus* (Mouse)
+- *Oryza sativa* (Rice)
+- *Phaseolus vulgaris* (Common Bean)
+- *Rattus norvegicus* (Rat)
 - *Saccharomyces cerevisiae* (Yeast)
-- *Arabidopsis thaliana* (Arabidopsis)
-- *Brassica oleracea* (Cabbage)
-- *Brassica napus* (Rapeseed)
+- *Schizosaccharomyces pombe* (Fission Yeast)
 - *Solanum lycopersicum* (Tomato)
 - *Vitis vinifera* (Grapevine)
-- *Lupinus angustifolius* (Blue Lupin)
-- *Phaseolus vulgaris* (Common Bean)
-- *Macaca mulatta* (Macaque)
-- *Apis mellifera* (Honey Bee)
 - *Xenopus laevis* (African Clawed Frog)
-- *Oryza sativa* (Rice)
+- *Xenopus tropicalis* (Tropical Clawed Frog)
 - *Zea mays* (Maize)
 
 More organisms will be included in future releases of **geneslator**.
@@ -78,13 +84,13 @@ Annotation databases resulting from the integration of all gene are built as SQL
 
 ## Citation
 
-If you use geneslator in your work, please cite:
+If you use **geneslator** in your work, please cite:
 
 ```r
 citation("geneslator")
 ```
 
-geneslator: an R package for comprehensive gene identifier conversion and annotation. Giulia Cavallaro, Giovanni Micale, Grete Francesca Privitera, Alfredo Pulvirenti, Stefano Forte, Salvatore Alaimo. bioRxiv 2026.03.30.714723; doi: https://doi.org/10.64898/2026.03.30.714723 
+Cavallaro, G., Micale, G., Privitera, G.F. et al. Geneslator: an R package for comprehensive gene identifier conversion and annotation. BMC Bioinformatics (2026). https://doi.org/10.1186/s12859-026-06617-7
 
 Micale G, Cavallaro G, Privitera GF (2026). geneslator: A Comprehensive Gene Identifier Conversion Tool. R package version 0.99.0. https://github.com/knowmics-lab/geneslator
 

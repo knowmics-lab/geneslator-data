@@ -1,7 +1,8 @@
-process.ncbi.data <- function(ncbi.data,speciesdb.name)
+process.ncbi.data <- function(ncbi.data,speciesdb.name,additional.db)
 {
   ncbi.data <- ncbi.data[,c("GeneID","Symbol","LocusTag","Symbol_from_nomenclature_authority","type_of_gene","description","Full_name_from_nomenclature_authority","Synonyms","dbXrefs")]
   colnames(ncbi.data) <- c("ENTREZID","UNOFFICIAL SYMBOL","LOCUS","SYMBOL","GENETYPE","UNOFFICIAL GENENAME","GENENAME","ALIAS","ENSEMBL")
+  ncbi.data <- ncbi.data[ncbi.data$`UNOFFICIAL SYMBOL`!="NEWENTRY",]
   ncbi.data[ncbi.data$SYMBOL=="NA" | ncbi.data$SYMBOL=="-","SYMBOL"] <- NA
   ncbi.data[ncbi.data$LOCUS=="NA" | ncbi.data$LOCUS=="-","LOCUS"] <- NA
   ncbi.data[ncbi.data$GENETYPE=="NA" | ncbi.data$GENETYPE=="-","GENETYPE"] <- NA
@@ -29,6 +30,18 @@ process.ncbi.data <- function(ncbi.data,speciesdb.name)
       }
     })
   }
+  if(!is.na(additional.db)){
+    ncbi.data[[additional.db]] <- sapply(ncbi.data$ENSEMBL,function(x){
+      if(is.na(x)) {
+        return(NA)
+      } else {
+        list.ids <- unlist(strsplit(x,"\\|"))
+        res <- paste0(sub(paste0(additional.db,":"),"",list.ids[grep(paste0("^",additional.db,":"),list.ids,ignore.case=T)],
+                          ignore.case=T), collapse="|")
+        return(ifelse(res=="",NA,res))
+      }
+    })
+  }
   if(!is.na(speciesdb.name) && speciesdb.name %in% c("FLYBASE","WORMBASE","TAIR")){
     ncbi.data$ENSEMBL <- ncbi.data[[speciesdb.name]]
   } else {
@@ -48,16 +61,25 @@ process.ncbi.data <- function(ncbi.data,speciesdb.name)
   })
   ncbi.data$ENTREZID <- as.character(ncbi.data$ENTREZID)
   if(!is.na(speciesdb.name)){
-    ncbi.data <- ncbi.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZID","ENSEMBL",speciesdb.name)]
+    if(!is.na(additional.db)){
+      ncbi.data <- ncbi.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZID","ENSEMBL",speciesdb.name,additional.db)]
+    } else {
+      ncbi.data <- ncbi.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZID","ENSEMBL",speciesdb.name)]
+    }
   } else {
     ncbi.data <- ncbi.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZID","ENSEMBL")]
+  }
+  if(!is.na(speciesdb.name) && speciesdb.name=="RAP"){
+    #Fix symbols removing "Os" or "OS-" or "OS_" prefixes
+    ncbi.data$SYMBOL <- ifelse(grepl("^Os[-_]?[A-Za-z]|^OS[-_]",ncbi.data$SYMBOL),
+      gsub("^Os[-_]?|^OS[-_]","",ncbi.data$SYMBOL),ncbi.data$SYMBOL)
   }
   if(!is.na(speciesdb.name) && speciesdb.name=="TAIR"){
     ncbi.data <- ncbi.data %>% group_by(SYMBOL,GENENAME) %>% summarise(across(everything(),function(x){
       unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
       res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
       ifelse(res=="",NA,res)
-    }))
+    }),.groups="drop")
   } else {
     ncbi.data <- ncbi.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
       unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
@@ -73,7 +95,7 @@ process.ncbi.data <- function(ncbi.data,speciesdb.name)
   return(as.data.frame(ncbi.data))
 }
 
-process.ncbi.archive.data <- function(ncbi.archive.data,global.ncbi.discontinued.data,speciesdb.name)
+process.ncbi.archive.data <- function(ncbi.archive.data,global.ncbi.discontinued.data,speciesdb.name,additional.db)
 {
   ncbi.archive.data <- ncbi.archive.data[,c("GeneID","Discontinued_GeneID","Discontinued_Symbol")]
   
@@ -105,6 +127,18 @@ process.ncbi.archive.data <- function(ncbi.archive.data,global.ncbi.discontinued
         }
       })
     }
+    if(!is.na(additional.db)){
+      ncbi.discontinued.data[[additional.db]] <- sapply(ncbi.discontinued.data$ExtIds,function(x){
+        if(is.na(x)) {
+          return(NA)
+        } else {
+          list.ids <- unlist(strsplit(x,"\\|"))
+          res <- paste0(sub(paste0(additional.db,":"),"",list.ids[grep(paste0("^",additional.db,":"),list.ids,ignore.case=T)],
+                            ignore.case=T), collapse="|")
+          return(ifelse(res=="",NA,res))
+        }
+      })
+    }
     if(!is.na(speciesdb.name) && speciesdb.name %in% c("FLYBASE","WORMBASE","TAIR")){
       ncbi.discontinued.data$ENSEMBL <- ncbi.discontinued.data[[speciesdb.name]]
     } else {
@@ -130,25 +164,39 @@ process.ncbi.archive.data <- function(ncbi.archive.data,global.ncbi.discontinued
       })
     }
     if(!is.na(speciesdb.name)){
-      ncbi.discontinued.data <- ncbi.discontinued.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL",speciesdb.name)]
+      if(!is.na(additional.db)){
+        ncbi.discontinued.data <- ncbi.discontinued.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL",speciesdb.name,additional.db)]
+      } else {
+        ncbi.discontinued.data <- ncbi.discontinued.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL",speciesdb.name)]
+      }
     } else {
       ncbi.discontinued.data <- ncbi.discontinued.data[,c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL")]
     }
   } else {
     if(!is.na(speciesdb.name)){
-      ncbi.discontinued.data <- data.frame(matrix(nrow=0,ncol=8))
-      colnames(ncbi.discontinued.data) <- c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL",speciesdb.name)
+      if(!is.na(additional.db)){
+        ncbi.discontinued.data <- data.frame(matrix(nrow=0,ncol=9))
+        colnames(ncbi.discontinued.data) <- c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL",speciesdb.name,additional.db)
+      } else {
+        ncbi.discontinued.data <- data.frame(matrix(nrow=0,ncol=8))
+        colnames(ncbi.discontinued.data) <- c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL",speciesdb.name)
+      }
     } else {
       ncbi.discontinued.data <- data.frame(matrix(nrow=0,ncol=7))
       colnames(ncbi.discontinued.data) <- c("SYMBOL","ALIAS","LOCUS","GENETYPE","GENENAME","ENTREZIDOLD","ENSEMBL")
     }
   }
-  if(species=="Arabidopsis"){
+  if(!is.na(speciesdb.name) && speciesdb.name=="RAP"){
+    #Fix symbols removing "Os" or "OS-" or "OS_" prefixes
+    ncbi.discontinued.data$SYMBOL <- ifelse(grepl("^Os[-_]?[A-Za-z]|^OS[-_]",ncbi.discontinued.data$SYMBOL),
+                               gsub("^Os[-_]?|^OS[-_]","",ncbi.discontinued.data$SYMBOL),ncbi.discontinued.data$SYMBOL)
+  }
+  if(!is.na(speciesdb.name) && speciesdb.name=="TAIR"){
     ncbi.discontinued.data <- ncbi.discontinued.data %>% group_by(SYMBOL,GENENAME) %>% summarise(across(everything(),function(x){
       unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
       res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
       ifelse(res=="",NA,res)
-    }))
+    }),.groups = "drop")
   } else {
     ncbi.discontinued.data <- ncbi.discontinued.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
       unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
@@ -273,12 +321,16 @@ process.ensembl.data <- function(ensembl.data,speciesdb.name,ncbi.data,hcop.data
     if(!is.na(speciesdb.name) && speciesdb.name %in% c("FLYBASE","WORMBASE","TAIR") & !is.archive){
       ensembl.data[[speciesdb.name]] <- ensembl.data$ENSEMBL
     }
+    if(!is.na(speciesdb.name) && speciesdb.name=="RAP"){
+      #Fix symbols removing "Os" or "OS-" or "OS_" prefixes
+      ensembl.data$SYMBOL <- ifelse(grepl("^Os[-_]?[A-Za-z0-9]|^OS[-_]",ensembl.data$SYMBOL),gsub("^Os[-_]?|^OS[-_]","",ensembl.data$SYMBOL),ensembl.data$SYMBOL)
+    }
     if(!is.na(speciesdb.name) && speciesdb.name=="TAIR"){
       ensembl.data <- ensembl.data %>% group_by(SYMBOL,GENENAME) %>% summarise(across(everything(),function(x){
         unique.info <- unique(unlist(strsplit(x,"\\|")))
         res <- paste0(sort(unique.info[!is.na(unique.info)]),collapse="|")
         ifelse(res=="",NA,res)
-      }))
+      }),.groups = "drop")
       if(!is.archive){
         ensembl.data <- ensembl.data[,c("SYMBOL","ALIAS","GENETYPE","GENENAME","ENSEMBL",speciesdb.name)]
       } else {
@@ -360,10 +412,20 @@ process.speciesdb.data <- function(speciesdb.data,species)
     speciesdb.data <- process.zfin.data(speciesdb.data)
   } else if(species=="Arabidopsis") {
     speciesdb.data <- process.tair.data(speciesdb.data)
-  } else if(species=="AfricanClawedFrog"){
+  } else if(species %in% c("AfricanClawedFrog","TropicalClawedFrog")){
     speciesdb.data <- process.xenbase.data(speciesdb.data)
-  } else if(species=="Macaque"){
+  } else if(species %in% c("Macaque","Dog","Cattle")){
     speciesdb.data <- process.vgnc.data(speciesdb.data)
+  } else if(species=="Chicken"){
+    speciesdb.data <- process.cgnc.data(speciesdb.data)
+  } else if(species=="FissionYeast"){
+    speciesdb.data <- process.pombase.data(speciesdb.data)
+  } else if(species=="HoneyBee"){
+    speciesdb.data <- process.beebase.data(speciesdb.data)
+  } else if(species=="Rice"){
+    speciesdb.data <- process.rap.data(speciesdb.data)
+  } else if(species=="Maize"){
+    speciesdb.data <- process.maizegdb.data(speciesdb.data)
   }
   return(speciesdb.data)
 }
@@ -541,7 +603,7 @@ process.tair.data <- function(speciesdb.data)
     unique.info <- unique(unlist(strsplit(x,"\\|")))
     res <- paste0(sort(unique.info[!is.na(unique.info)]),collapse="|")
     ifelse(res=="",NA,res)
-  }))
+  }),.groups = "drop")
   return(as.data.frame(speciesdb.data))
 }
 
@@ -575,6 +637,140 @@ process.vgnc.data <- function(speciesdb.data)
   return(speciesdb.data)
 }
 
+process.cgnc.data <- function(speciesdb.data)
+{
+  speciesdb.data <- speciesdb.data[,c("V4","V5","V6","V1")]
+  colnames(speciesdb.data) <- c("SYMBOL","GENENAME SPECIAL","ALIAS SPECIAL","CGNC SPECIAL")
+  speciesdb.data$SYMBOL <- ifelse(is.na(speciesdb.data$SYMBOL),speciesdb.data$`ALIAS SPECIAL`,speciesdb.data$SYMBOL)
+  speciesdb.data <- speciesdb.data[!is.na(speciesdb.data$SYMBOL),]
+  speciesdb.data$`ALIAS SPECIAL` <- ifelse(is.na(speciesdb.data$`ALIAS SPECIAL`),speciesdb.data$SYMBOL,paste0(speciesdb.data$`ALIAS SPECIAL`,"|",speciesdb.data$SYMBOL))
+  speciesdb.data <- speciesdb.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+    unique.info <- unique(x)
+    res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
+    ifelse(res=="",NA,res)
+  }))
+  return(speciesdb.data)
+}
+
+process.pombase.data <- function(speciesdb.data)
+{
+  speciesdb.data <- speciesdb.data[,c("gene_name","synonyms","gene_type","gene_systematic_id")]
+  colnames(speciesdb.data) <- c("SYMBOL","ALIAS SPECIAL","GENETYPE SPECIAL","POMBASE SPECIAL")
+  speciesdb.data$`ALIAS SPECIAL` <- gsub(",","|",speciesdb.data$`ALIAS SPECIAL`)
+  speciesdb.data$SYMBOL <- ifelse(is.na(speciesdb.data$SYMBOL),ifelse(is.na(speciesdb.data$`ALIAS SPECIAL`),
+    speciesdb.data$`ALIAS SPECIAL`,sub("\\|.*", "", speciesdb.data$`ALIAS SPECIAL`)),speciesdb.data$SYMBOL)
+  speciesdb.data <- speciesdb.data[!is.na(speciesdb.data$SYMBOL),]
+  ref.cols.alias <- c("SYMBOL","ALIAS SPECIAL")
+  speciesdb.data$`ALIAS SPECIAL` <- apply(speciesdb.data,1,function(row){
+    unique.info <- unname(unlist(sapply(ref.cols.alias,function(col){
+      strsplit(as.character(row[col]),"\\|")
+    })))
+    unique.info <- unique(unique.info[!is.na(unique.info)])
+    res <- paste0(unique.info,collapse="|")
+    ifelse(res=="",NA,res)
+  })
+  speciesdb.data <- speciesdb.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+    unique.info <- unique(x)
+    res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
+    ifelse(res=="",NA,res)
+  }))
+  return(speciesdb.data)
+}
+
+process.beebase.data <- function(speciesdb.data)
+{
+  speciesdb.data[["BEEBASE SPECIAL"]] <- sapply(speciesdb.data$Dbxref,function(list.ids){
+    if(length(list.ids)==0) {
+      return(NA)
+    } else {
+      res <- paste0(sub("BEEBASE:","",list.ids[grep(paste0("^BEEBASE:"),list.ids,ignore.case=T)],
+                        ignore.case=T), collapse="|")
+      return(ifelse(res=="",NA,res))
+    }
+  })
+  speciesdb.data <- speciesdb.data[,c("symbol_ncbi","gene_synonym","gene_biotype","BEEBASE SPECIAL")]
+  colnames(speciesdb.data) <- c("SYMBOL","ALIAS SPECIAL","GENETYPE SPECIAL","BEEBASE SPECIAL")
+  speciesdb.data <- speciesdb.data[!is.na(speciesdb.data$SYMBOL) & !is.na(speciesdb.data$`BEEBASE SPECIAL`),]
+  speciesdb.data$`ALIAS SPECIAL` <- ifelse(is.na(speciesdb.data$`ALIAS SPECIAL`),speciesdb.data$SYMBOL,
+                                 paste0(speciesdb.data$`ALIAS SPECIAL`,"|",speciesdb.data$SYMBOL))
+  speciesdb.data <- speciesdb.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+    unique.info <- unique(x)
+    res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
+    ifelse(res=="",NA,res)
+  }))
+  return(speciesdb.data)
+}
+
+process.rap.data <- function(speciesdb.data)
+{
+  speciesdb.data <- speciesdb.data[,c("CGSNL Gene Symbol","Gene symbol synonym(s)","CGSNL Gene Name","RAP ID","MSU ID")]
+  colnames(speciesdb.data) <- c("SYMBOL","ALIAS SPECIAL","GENENAME SPECIAL","RAP SPECIAL","MSU SPECIAL")
+  speciesdb.data <- speciesdb.data[!is.na(speciesdb.data$`RAP SPECIAL`) | !is.na(speciesdb.data$`MSU SPECIAL`),]
+  speciesdb.data[speciesdb.data=="_"] <- NA
+  speciesdb.data[speciesdb.data=="-"] <- NA
+  speciesdb.data$`ALIAS SPECIAL` <- sapply(speciesdb.data$`ALIAS SPECIAL`,function(x){
+    if(is.na(x)) {
+      return(NA)
+    } else {
+      list.ids <- unlist(strsplit(x,", "))
+      list.ids <- unique(gsub("^Os[-_ ]?|^OS[-_]","",list.ids))
+      res <- paste0(list.ids, collapse="|")
+      return(ifelse(res=="",NA,res))
+    }
+  })
+  speciesdb.data$SYMBOL <- ifelse(is.na(speciesdb.data$SYMBOL),gsub("\\|.*","",speciesdb.data$`ALIAS SPECIAL`),
+                                  speciesdb.data$SYMBOL)
+  speciesdb.data <- speciesdb.data[!is.na(speciesdb.data$SYMBOL),]
+  speciesdb.data$`ALIAS SPECIAL` <- apply(speciesdb.data,1,function(row){
+    ifelse(is.na(row["ALIAS SPECIAL"]),row["SYMBOL"],
+      paste0(unique(c(unlist(strsplit(row["ALIAS SPECIAL"],"\\|")),row["SYMBOL"])),collapse="|"))
+  })
+  speciesdb.data$`RAP SPECIAL` <- sapply(speciesdb.data$`RAP SPECIAL`,function(x){
+    if(is.na(x)) {
+      return(NA)
+    } else {
+      list.ids <- unique(unlist(strsplit(x,"\\||/")))
+      res <- paste0(list.ids, collapse="|")
+      return(ifelse(res=="",NA,res))
+    }
+  })
+  speciesdb.data$`MSU SPECIAL` <- sapply(speciesdb.data$`MSU SPECIAL`,function(x){
+    if(is.na(x)) {
+      return(NA)
+    } else {
+      list.ids <- unique(unlist(strsplit(x,", ")))
+      res <- paste0(list.ids, collapse="|")
+      return(ifelse(res=="",NA,res))
+    }
+  })
+  if(speciesdb.name=="RAP"){
+    #Fix symbols removing "Os" or "OS-" or "OS_" prefixes
+    speciesdb.data$SYMBOL <- ifelse(grepl("^Os[A-Z]",speciesdb.data$SYMBOL),
+      gsub("^Os","",speciesdb.data$SYMBOL),speciesdb.data$SYMBOL)
+  }
+  speciesdb.data <- speciesdb.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+    unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
+    res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
+    ifelse(res=="",NA,res)
+  }))
+  return(speciesdb.data)
+}
+
+process.maizegdb.data <- function(speciesdb.data)
+{
+  speciesdb.data <- speciesdb.data[,c("V11","V12","V2")]
+  colnames(speciesdb.data) <- c("SYMBOL","GENENAME SPECIAL","MAIZEGDB SPECIAL")
+  speciesdb.data[speciesdb.data=="-"] <- NA
+  speciesdb.data <- speciesdb.data[!is.na(speciesdb.data$SYMBOL) & !startsWith(speciesdb.data$SYMBOL,"Zm00") &
+                                   !startsWith(speciesdb.data$SYMBOL,"ZM00"),]
+  speciesdb.data <- speciesdb.data %>% group_by(SYMBOL) %>% summarise(across(everything(),function(x){
+    unique.info <- unique(unlist(strsplit(as.character(x),"\\|")))
+    res <- paste0(unique.info[!is.na(unique.info)],collapse="|")
+    ifelse(res=="",NA,res)
+  }))
+  return(speciesdb.data)
+}
+
 process.ncbi.orthologs.data <- function(global.ncbi.orthologs,species.taxid,taxonomy.table,annotation.data.list)
 {
   #Filter data about the requested species
@@ -583,13 +779,13 @@ process.ncbi.orthologs.data <- function(global.ncbi.orthologs,species.taxid,taxo
   ncbi.orthologs <- data.frame("GeneID"=c(ncbi.orthologs.ref$GeneID,ncbi.orthologs.other$Other_GeneID),
                                "Other_tax_id"=c(ncbi.orthologs.ref$Other_tax_id,ncbi.orthologs.other$`#tax_id`),
                                "Other_GeneID"=c(ncbi.orthologs.ref$Other_GeneID,ncbi.orthologs.other$GeneID))
-  
-  #Map ids to gene symbols
-  ncbi.orthologs <- map.ortho.ids.to.symbol(annotation.data.list,ncbi.orthologs,species.taxid,taxonomy.table,"ENTREZID")
-  
-  #Reshape orthology data with one column for each species
-  ncbi.orthologs <- reshape.orthology.data(ncbi.orthologs,species.taxid,taxonomy.table)
-  colnames(ncbi.orthologs)[colnames(ncbi.orthologs)!="SYMBOL"] <- paste0(colnames(ncbi.orthologs)[colnames(ncbi.orthologs)!="SYMBOL"]," NCBI")
+  if(nrow(ncbi.orthologs)>0){
+    #Map ids to gene symbols
+    ncbi.orthologs <- map.ortho.ids.to.symbol(annotation.data.list,ncbi.orthologs,species.taxid,taxonomy.table,"ENTREZID")
+    #Reshape orthology data with one column for each species
+    ncbi.orthologs <- reshape.orthology.data(ncbi.orthologs,species.taxid,taxonomy.table)
+    colnames(ncbi.orthologs)[colnames(ncbi.orthologs)!="SYMBOL"] <- paste0(colnames(ncbi.orthologs)[colnames(ncbi.orthologs)!="SYMBOL"]," NCBI")
+  }
   
   return(ncbi.orthologs)
 }
@@ -630,25 +826,47 @@ process.alliance.orthologs.data <- function(global.alliance.orthologs,species.ta
   return(alliance.orthologs) 
 }
 
-process.speciesdb.orthologs.data <- function(speciesdb.orthologs,species.taxid,taxonomy.table,annotation.data.list)
-{
-  if(species=="Human"){
-    speciesdb.orthologs <- process.hgnc.orthologs.data(speciesdb.orthologs,species.taxid,taxonomy.table,annotation.data.list)
-  }
-  return(speciesdb.orthologs)
-}
-
-process.hgnc.orthologs.data <- function(speciesdb.orthologs,species.taxid,taxonomy.table,annotation.data.list)
+process.hcop.data <- function(global.hgnc.orthologs, human.taxid)
 {
   #Filter out rows where ids of genes are missing
-  speciesdb.orthologs <- speciesdb.orthologs[speciesdb.orthologs$human_entrez_gene!="-" | speciesdb.orthologs$human_ensembl_gene!="-",]
-  speciesdb.orthologs <- speciesdb.orthologs[speciesdb.orthologs$ortholog_species_entrez_gene!="-" | speciesdb.orthologs$ortholog_species_ensembl_gene!="-",]
+  global.hgnc.orthologs <- global.hgnc.orthologs[global.hgnc.orthologs$human_entrez_gene!="-" | 
+                                                global.hgnc.orthologs$human_ensembl_gene!="-",]
+  global.hgnc.orthologs <- global.hgnc.orthologs[global.hgnc.orthologs$ortholog_species_entrez_gene!="-" | 
+                                                global.hgnc.orthologs$ortholog_species_ensembl_gene!="-",]
   #Select ref gene ids for human and ortho species
-  speciesdb.orthologs$human_entrez_gene <- ifelse(speciesdb.orthologs$human_entrez_gene=="-",speciesdb.orthologs$human_ensembl_gene,speciesdb.orthologs$human_entrez_gene)
-  speciesdb.orthologs$ortholog_species_entrez_gene <- ifelse(speciesdb.orthologs$ortholog_species_entrez_gene=="-",speciesdb.orthologs$ortholog_species_ensembl_gene,speciesdb.orthologs$ortholog_species_entrez_gene)
+  global.hgnc.orthologs$human_entrez_gene <- ifelse(global.hgnc.orthologs$human_entrez_gene=="-",
+    global.hgnc.orthologs$human_ensembl_gene,global.hgnc.orthologs$human_entrez_gene)
+  global.hgnc.orthologs$ortholog_species_entrez_gene <- ifelse(global.hgnc.orthologs$ortholog_species_entrez_gene=="-",
+    global.hgnc.orthologs$ortholog_species_ensembl_gene,global.hgnc.orthologs$ortholog_species_entrez_gene)
   #Take only relevant columns for the analysis
-  speciesdb.orthologs <- speciesdb.orthologs[,c("human_entrez_gene","ortholog_species","ortholog_species_entrez_gene")]
-  colnames(speciesdb.orthologs) <- c("GeneID","Other_tax_id","Other_GeneID")
+  global.hgnc.orthologs <- global.hgnc.orthologs[,c("human_entrez_gene","ortholog_species","ortholog_species_entrez_gene")]
+  global.hgnc.orthologs[["Human_tax_id"]] <- human.taxid
+  colnames(global.hgnc.orthologs) <- c("Human_geneid","Species1_taxid","Species1_geneid","Human_taxid")
+  #Get Human-other species orthologs data
+  human.hgnc.orthologs <- global.hgnc.orthologs[,c("Human_taxid","Human_geneid","Species1_taxid","Species1_geneid")]
+  colnames(human.hgnc.orthologs) <- c("Species1_taxid","Species1_geneid","Species2_taxid","Species2_geneid")
+  #Get Other species-other species orthologs data
+  other.hgnc.orthologs <- global.hgnc.orthologs
+  colnames(other.hgnc.orthologs) <- c("Human_geneid","Species2_taxid","Species2_geneid","Human_taxid")
+  other.hgnc.orthologs <- inner_join(global.hgnc.orthologs, other.hgnc.orthologs,
+    by = join_by(Human_geneid, Human_taxid, Species1_geneid < Species2_geneid))
+  other.hgnc.orthologs <- other.hgnc.orthologs[,c("Species1_taxid","Species1_geneid","Species2_taxid","Species2_geneid")]
+  #Remove paralogs
+  other.hgnc.orthologs <- other.hgnc.orthologs[other.hgnc.orthologs$Species1_taxid!=other.hgnc.orthologs$Species2_taxid,]
+  #Merge human-other and other-other ortohologs data and remove duplicates
+  global.hgnc.orthologs <- unique(rbind(human.hgnc.orthologs,other.hgnc.orthologs))
+  
+  return(global.hgnc.orthologs)
+}
+
+process.hgnc.orthologs.data <- function(global.hgnc.orthologs,species.taxid,taxonomy.table,annotation.data.list)
+{
+  #Filter data about the requested species
+  hgnc.orthologs.ref <- global.hgnc.orthologs[global.hgnc.orthologs$Species1_taxid %in% species.taxid,]
+  hgnc.orthologs.other <- global.hgnc.orthologs[global.hgnc.orthologs$Species2_taxid %in% species.taxid,]
+  hgnc.orthologs <- data.frame("GeneID"=c(hgnc.orthologs.ref$Species1_geneid,hgnc.orthologs.other$Species2_geneid),
+                                   "Other_tax_id"=c(hgnc.orthologs.ref$Species2_taxid,hgnc.orthologs.other$Species1_taxid),
+                                   "Other_GeneID"=c(hgnc.orthologs.ref$Species2_geneid,hgnc.orthologs.other$Species1_geneid))
   
   #Get species info
   valid.pos <- sapply(taxonomy.table$taxid, function(x) any(x %in% species.taxid))
@@ -656,19 +874,19 @@ process.hgnc.orthologs.data <- function(speciesdb.orthologs,species.taxid,taxono
   species.name <- taxonomy.table[valid.pos,"species"]
   
   #Map ref species ids to gene symbols
-  map.ref.ids.to.symbol <- map.keys.to.values(annotation.data.list[[species.name]],speciesdb.orthologs$GeneID,"SYMBOL","ENTREZID")
-  speciesdb.orthologs <- merge(speciesdb.orthologs,map.ref.ids.to.symbol,by.x="GeneID",by.y="ENTREZID",all.x=T)
-  colnames(speciesdb.orthologs)[colnames(speciesdb.orthologs)=="SYMBOL"] <- "SYM_ENTREZ"
-  map.ref.ids.to.symbol <- map.keys.to.values(annotation.data.list[[species.name]],speciesdb.orthologs$GeneID,"SYMBOL","ENSEMBL")
-  speciesdb.orthologs <- merge(speciesdb.orthologs,map.ref.ids.to.symbol,by.x="GeneID",by.y="ENSEMBL",all.x=T)
-  speciesdb.orthologs[["Ref_Symbol"]] <- ifelse(is.na(speciesdb.orthologs$SYM_ENTREZ),speciesdb.orthologs$SYMBOL,speciesdb.orthologs$SYM_ENTREZ)
-  speciesdb.orthologs <- as.data.frame(speciesdb.orthologs[!is.na(speciesdb.orthologs$Ref_Symbol),c("Other_tax_id","Other_GeneID","Ref_Symbol")])
+  map.ref.ids.to.symbol <- map.keys.to.values(annotation.data.list[[species.name]],hgnc.orthologs$GeneID,"SYMBOL","ENTREZID")
+  hgnc.orthologs <- merge(hgnc.orthologs,map.ref.ids.to.symbol,by.x="GeneID",by.y="ENTREZID",all.x=T)
+  colnames(hgnc.orthologs)[colnames(hgnc.orthologs)=="SYMBOL"] <- "SYM_ENTREZ"
+  map.ref.ids.to.symbol <- map.keys.to.values(annotation.data.list[[species.name]],hgnc.orthologs$GeneID,"SYMBOL","ENSEMBL")
+  hgnc.orthologs <- merge(hgnc.orthologs,map.ref.ids.to.symbol,by.x="GeneID",by.y="ENSEMBL",all.x=T)
+  hgnc.orthologs[["Ref_Symbol"]] <- ifelse(is.na(hgnc.orthologs$SYM_ENTREZ),hgnc.orthologs$SYMBOL,hgnc.orthologs$SYM_ENTREZ)
+  hgnc.orthologs <- as.data.frame(hgnc.orthologs[!is.na(hgnc.orthologs$Ref_Symbol),c("Other_tax_id","Other_GeneID","Ref_Symbol")])
   
   #Map other species ids to gene symbols
   map.other.ids.to.symbol <- data.frame(ID=character(),SYMBOL=character())
   for(i in 1:nrow(taxonomy.table)) {
     if(all(unlist(taxonomy.table[i,"taxid"])!=species.taxid)){
-      list.gene.ids <- speciesdb.orthologs[speciesdb.orthologs$`Other_tax_id` %in% unlist(taxonomy.table[i,"taxid"]),"Other_GeneID"]
+      list.gene.ids <- hgnc.orthologs[hgnc.orthologs$`Other_tax_id` %in% unlist(taxonomy.table[i,"taxid"]),"Other_GeneID"]
       other.species.info <- strsplit(taxonomy.table[i,"official_name"],"_")[[1]]
       other.species.name <- taxonomy.table[i,"species"]
       res.table.entrez <- map.keys.to.values(annotation.data.list[[other.species.name]],list.gene.ids,"SYMBOL","ENTREZID")
@@ -681,15 +899,15 @@ process.hgnc.orthologs.data <- function(speciesdb.orthologs,species.taxid,taxono
       map.other.ids.to.symbol <- rbind(map.other.ids.to.symbol,res.table)
     }
   }
-  speciesdb.orthologs <- merge(speciesdb.orthologs,map.other.ids.to.symbol,by.x="Other_GeneID",by.y="ID",all.x=T)
-  speciesdb.orthologs <- speciesdb.orthologs[,c("Other_tax_id","Ref_Symbol","SYMBOL")]
-  colnames(speciesdb.orthologs) <- c("Ortho_TAXID","SYMBOL","Ortho_SYMBOL")
+  hgnc.orthologs <- merge(hgnc.orthologs,map.other.ids.to.symbol,by.x="Other_GeneID",by.y="ID",all.x=T)
+  hgnc.orthologs <- hgnc.orthologs[,c("Other_tax_id","Ref_Symbol","SYMBOL")]
+  colnames(hgnc.orthologs) <- c("Ortho_TAXID","SYMBOL","Ortho_SYMBOL")
   
   #Reshape orthology data with one column for each species
-  speciesdb.orthologs <- reshape.orthology.data(speciesdb.orthologs,species.taxid,taxonomy.table)
-  colnames(speciesdb.orthologs)[colnames(speciesdb.orthologs)!="SYMBOL"] <- paste0(colnames(speciesdb.orthologs)[colnames(speciesdb.orthologs)!="SYMBOL"]," SPECIAL")
+  hgnc.orthologs <- reshape.orthology.data(hgnc.orthologs,species.taxid,taxonomy.table)
+  colnames(hgnc.orthologs)[colnames(hgnc.orthologs)!="SYMBOL"] <- paste0(colnames(hgnc.orthologs)[colnames(hgnc.orthologs)!="SYMBOL"]," HGNC")
   
-  return(speciesdb.orthologs)
+  return(hgnc.orthologs)
 }
 
 reshape.orthology.data <- function(orthologs.data,species.taxid,taxonomy.table)

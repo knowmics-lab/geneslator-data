@@ -1,6 +1,7 @@
 options(timeout = max(3600, getOption("timeout")))
 
-download.annot.file <- function(url,max.retries = 5, retry.delay = 10,alternative.url=NULL){
+download.annot.file <- function(url,max.retries = 5, retry.delay = 10,alternative.url=NULL)
+{
   temp.file <- tempfile(fileext = paste0(".",tools::file_ext(url)))
   attempt <- 0
   success <- FALSE
@@ -78,10 +79,10 @@ download.gff.data <- function(url, list.tags, list.filters)
   return(gff.data)
 }
 
-download.delim.data <- function(url, header, comment.character)
+download.delim.data <- function(url, header, comment.character, lines.to.skip=0)
 {
   file <- download.annot.file(url)
-  delim.data <- read.delim(file, header=header, comment.char=comment.character, quote="")
+  delim.data <- read.delim(file, header=header, comment.char=comment.character, quote="", skip=lines.to.skip)
   delim.data[delim.data==""] <- NA
   file.remove(file)
   return(delim.data)
@@ -95,11 +96,15 @@ download.go.dictionary <- function(url)
   return(go.dictionary)
 }
 
-download.wikipathways.data <- function(url, species)
+download.wikipathways.data <- function(url, species.scientific.name)
 {
   wiki.content <- curl_fetch_memory(url)
   wiki.files <- read_html(wiki.content$content) %>% html_elements("a") %>% html_attr("href")
-  wiki.file <- wiki.files[grep(gsub(" ","_",species),wiki.files)]
+  wiki.file <- wiki.files[grep(gsub(" ","_",species.scientific.name),wiki.files)]
+  #Species is present but name do not match. Perform approximate search
+  if(length(wiki.file)==0 && species.scientific.name %in% c("Canis lupus familiaris")){
+    wiki.file <- wiki.files[which.min(stringdist(species.scientific.name, wiki.files, method = "jw"))]
+  }
   file <- download.annot.file(paste0(url,wiki.file))
   wikipath.data <- readPathwayGMT(file)
   file.remove(file)
@@ -114,7 +119,8 @@ filter.remote.links.html <- function(url, file.filter.string)
   return(list.links)
 }
 
-filter.remote.links.json <- function(url, file.filter.string) {
+filter.remote.links.json <- function(url, file.filter.string)
+{
   folder.content <- curl_fetch_memory(url)
   listing <- fromJSON(rawToChar(folder.content$content))
   #Keep only entries of type "file" at root level
@@ -237,3 +243,55 @@ parse.entrez.xml <- function(res.xml)
   return(gene.info)
 }
 
+retrieve.pombase.data.file <- function(url)
+{
+  link.content <- curl_fetch_memory(paste0(url,"/?C=M;O=D"))
+  if(link.content$status_code==200){
+    list.links <- read_html(link.content$content) %>% html_elements("a") %>% html_text(trim=T)
+    sub.url <- paste0(url,"/",list.links[grep("^[0-9]+",list.links)[1]])
+    link.content <- curl_fetch_memory(paste0(sub.url,"/?C=M;O=D"))
+    if(link.content$status_code==200){
+      list.links <- read_html(link.content$content) %>% html_elements("a") %>% html_text(trim=T)
+      sub.url <- paste0(sub.url,list.links[grep("^pombase",list.links)[1]])
+      pombase.file <- paste0(sub.url,"gene_names_and_identifiers/gene_IDs_names_products.tsv")
+    }
+  }
+  return(pombase.file)
+}
+
+retrieve.beebase.data <- function(url)
+{
+  link.content <- curl_fetch_memory(url)
+  if(link.content$status_code==200){
+    list.links <- read_html(link.content$content) %>% html_elements("a") %>% html_text(trim=T)
+    sub.urls <- paste0(url,"/",list.links[grep("^Apis_mellifera",list.links)])
+    for(i in 1:length(sub.urls)){
+      gff.data <- download.gff.data(sub.urls[i],NULL,c("gene"))
+      gff.data <- gff.data[,c("ID","Name","Dbxref","symbol_ncbi","gene_biotype","gene_synonym")]
+      if(i==1){
+        beebase.data <- gff.data
+      } else {
+        beebase.data <- rbind(beebase.data,gff.data)
+      }
+    }
+  }
+  return(beebase.data)
+}
+
+retrieve.maizegdb.data <- function(url)
+{
+  link.content <- curl_fetch_memory(url)
+  if(link.content$status_code==200){
+    list.links <- read_html(link.content$content) %>% html_elements("a") %>% html_text(trim=T)
+    sub.urls <- paste0(url,"/",list.links[grep("^Zm-B73-REFERENCE-",list.links)])
+    sub.urls.versions <- as.numeric(gsub(".*-([0-9]+\\.[0-9]+)/$", "\\1", sub.urls))
+    sub.url <- sub.urls[which.max(sub.urls.versions)]
+    link.content <- curl_fetch_memory(sub.url)
+    if(link.content$status_code==200){
+      list.links <- read_html(link.content$content) %>% html_elements("a") %>% html_text(trim=T)
+      maizegdb.url <- paste0(sub.url,list.links[grep("fulldata",list.links)])
+      maizegdb.data <- download.tabular.data(maizegdb.url,header=F)
+    }
+  }
+  return(maizegdb.data)
+}
