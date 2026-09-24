@@ -99,6 +99,9 @@ Micale G, Cavallaro G, Privitera GF (2026). geneslator: A Comprehensive Gene Ide
 - **Giovanni Micale** - *Author and maintainer* - [ORCID](https://orcid.org/0000-0002-4953-026X)
 - **Giulia Cavallaro** - *Author* - [ORCID](https://orcid.org/0009-0000-1212-8368)
 - **Grete Francesca Privitera** - *Author* - [ORCID](https://orcid.org/0000-0003-1807-4780)
+- **Alfredo Pulvirenti** - *Author* - [ORCID](https://orcid.org/0000-0002-9764-0295)
+- **Stefano Forte** - *Author* - [ORCID](https://orcid.org/0000-0001-5746-7451)
+- **Salvatore Alaimo** - *Author* - [ORCID](https://orcid.org/0000-0003-4825-7617)
 
 University of Catania
 
