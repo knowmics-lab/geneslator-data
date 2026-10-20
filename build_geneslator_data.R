@@ -25,7 +25,7 @@ option.list <- list(
               help = "Organisms [default: %default]"),
   make_option(c("--folder"), type = "character", default = "Output",
               help = "Output folder [default: %default]"),
-  make_option(c("--saveTxt"), action = "store_true", default = FALSE,
+  make_option(c("--saveTxt"), action = "store_true", default = TRUE,
               help = "Also save output files as .txt")
 )
 opt.parser <- OptionParser(option_list = option.list)
@@ -162,16 +162,7 @@ for(species in list.species){
   list.species.urls <- species.url[species.url$species==species,]
   species.scientific.name <- species.url[species.url$species==species,"official_name"]
   species.taxid <- species.url[species.url$species==species,"taxid"][[1]]
-  speciesdb.name <- species.url[species.url$species==species,"speciesdb_name"]
-  
-  #Set name for additional external DB IDs (if present on NCBI data) 
-  if(species=="Cattle"){
-    additional.db <- "BGD"
-  } else if(species=="Dog") {
-    additional.db <- "RGD"
-  } else {
-    additional.db <- NA
-  }
+  speciesdb.name <- species.url[species.url$species==species,"speciesdb_name"][[1]]
   
   #----------NCBI data--------------
   #Process current data
@@ -180,17 +171,17 @@ for(species in list.species){
   print("Process NCBI current data...")
   ncbi.data <- ncbi.data[ncbi.data$`#tax_id` %in% species.taxid,]
   ncbi.taxids <- unique(ncbi.data$`#tax_id`)
-  ncbi.data <- process.ncbi.data(ncbi.data,speciesdb.name,additional.db)
+  ncbi.data <- process.ncbi.data(ncbi.data,species,speciesdb.name)
   #Process archive data
   print("Process archive data...")
   #Filter archive data based on taxonomy IDs present in current data
   ncbi.archive.data <- global.ncbi.archive.data[global.ncbi.archive.data$`#tax_id` %in% ncbi.taxids,]
-  ncbi.archive.data <- process.ncbi.archive.data(ncbi.archive.data,global.ncbi.discontinued.data,speciesdb.name,additional.db)
+  ncbi.archive.data <- process.ncbi.archive.data(ncbi.archive.data,global.ncbi.discontinued.data,species,speciesdb.name)
   ncbi.replaced.data <- ncbi.archive.data[[1]]
   ncbi.discontinued.data <- ncbi.archive.data[[2]]
   #Merge current and archive data
   print("Merge current and archive NCBI data...")
-  ncbi.data <- merge.ncbi.data(ncbi.data,ncbi.replaced.data,ncbi.discontinued.data,speciesdb.name,additional.db)
+  ncbi.data <- merge.ncbi.data(ncbi.data,ncbi.replaced.data,ncbi.discontinued.data,species,speciesdb.name)
   
   #----------SPECIES DB data-------------
   if(!is.na(list.species.urls$speciesdb)){
@@ -200,7 +191,7 @@ for(species in list.species){
       list.filters <- c("gene","ncRNA_gene","tRNA_gene","snoRNA_gene","transposable_element_gene","pseudogene",
                         "telomerase_RNA_gene","snRNA_gene","rRNA_gene")
       speciesdb.data <- download.gff.data(list.species.urls$speciesdb,list.tags,list.filters)
-    } else if(species %in% c("Human","Mouse")){
+    } else if(species %in% c("Human","Mouse","Rice","SocialAmoeba")){
       speciesdb.data <- download.tabular.data(list.species.urls$speciesdb)
     } else if(species=="Rat"){
       speciesdb.data <- download.delim.data(list.species.urls$speciesdb,header=T,comment.character="#")
@@ -210,6 +201,7 @@ for(species in list.species){
       speciesdb.data <- download.gff.data(list.species.urls$speciesdb,list.tags,list.filters)
     } else if(species=="Fly"){
       speciesdb.file <- filter.remote.links.html(list.species.urls$speciesdb,"fbgn_annotation_ID")
+      speciesdb.file <- speciesdb.file[1]
       speciesdb.data <- download.delim.data(paste0(list.species.urls$speciesdb,speciesdb.file),
                                             header=F,comment.character="#")
     } else if(species=="Worm"){
@@ -223,7 +215,7 @@ for(species in list.species){
     } else if(species %in% c("AfricanClawedFrog","TropicalClawedFrog")){
       speciesdb.data <- download.delim.data(list.species.urls$speciesdb,header=F,comment.character="!")
       speciesdb.data <- speciesdb.data[speciesdb.data$V7==paste0("taxon:",species.taxid),]
-    } else if(species %in% c("Macaque","Dog","Cattle")){
+    } else if(species %in% c("Macaque","Dog","Cattle","Pig","Chimpanzee","Horse")){
       speciesdb.data <- download.tabular.data(list.species.urls$speciesdb)
       speciesdb.data <- speciesdb.data[speciesdb.data$taxon_id %in% species.taxid,]
     } else if(species=="Chicken"){
@@ -233,8 +225,6 @@ for(species in list.species){
       speciesdb.data <- download.tabular.data(speciesdb.file)
     } else if(species=="HoneyBee"){
       speciesdb.data <- retrieve.beebase.data(list.species.urls$speciesdb)
-    } else if(species=="Rice"){
-      speciesdb.data <- download.tabular.data(list.species.urls$speciesdb)
     } else if(species=="Maize"){
       speciesdb.data <- retrieve.maizegdb.data(list.species.urls$speciesdb)
     }
@@ -261,7 +251,7 @@ for(species in list.species){
     ensembl.data <- download.gff.data(paste0(ensembl.path,"/",ensembl.file),list.tags.ens,list.filters.ens)
     print("Process Ensembl current data...")
     ensembl.data <- process.ensembl.data(ensembl.data,speciesdb.name,ncbi.data,
-      if(species == "Zebrafish") hcop.data else NULL,species.taxid,is.archive=F)
+      if(species == "Zebrafish") hcop.data else NULL,species,species.taxid,is.archive=F)
     #Process archive data
     ensembl.data[["ENSEMBLOLD ENSEMBL"]] <- NA
     ensembl.archive.data <- list()
@@ -285,9 +275,9 @@ for(species in list.species){
       list.tags <- c("gene_id","gene_biotype","gene_name")
       list.filters <- "gene"
       ensembl.grch37.data <- download.gff.data(global.urls$ensembl_grch37,list.tags,list.filters)
-      ensembl.grch37.data <- process.ensembl.grch37.data(ensembl.grch37.data,speciesdb.name)
+      ensembl.grch37.data <- process.ensembl.grch37.data(ensembl.grch37.data)
       print("Merge GRCh37 data with Ensembl current and archive data...")
-      ensembl.data <- merge.with.ensembl.grch37.data(ensembl.data,ensembl.grch37.data,ncbi.data,speciesdb.name)
+      ensembl.data <- merge.with.ensembl.grch37.data(ensembl.data,ensembl.grch37.data,ncbi.data)
     }
   } else {
     ensembl.data <- data.frame()
@@ -303,11 +293,11 @@ for(species in list.species){
   uniprot.url.alternative <- paste0(global.urls$uniprot_alternative,uniprot.class,"/",uniprot.code,"/",uniprot.code,"_",uniprot.tax,".idmapping.gz") 
   uniprot.data <- download.tabular.data(uniprot.url,header=F,alternative.url=uniprot.url.alternative)
   print("Process Uniprot data...")
-  uniprot.data <- process.uniprot.data(uniprot.data,species)
+  uniprot.data <- process.uniprot.data(uniprot.data,species,speciesdb.name)
   
   #----------Merge NCBI, Ensembl, species-db and Uniprot data-----------
   print("Merge NCBI, Ensembl, species-specific db and Uniprot data...")
-  annotation.data <- merge.databases(ncbi.data,ensembl.data,uniprot.data,speciesdb.data,speciesdb.name,species,additional.db)
+  annotation.data <- merge.databases(ncbi.data,ensembl.data,uniprot.data,speciesdb.data,species,speciesdb.name)
   annotation.data.list[[species]] <- annotation.data
   
 }
@@ -320,16 +310,7 @@ for(species in list.species){
   list.species.urls <- species.url[species.url$species==species,]
   species.scientific.name <- species.url[species.url$species==species,"official_name"]
   species.taxid <- species.url[species.url$species==species,"taxid"][[1]]
-  speciesdb.name <- species.url[species.url$species==species,"speciesdb_name"]
-  
-  #Set name for additional external DB IDs (if present on NCBI data) 
-  if(species=="Cattle"){
-    additional.db <- "BGD"
-  } else if(species=="Dog") {
-    additional.db <- "RGD"
-  } else {
-    additional.db <- NA
-  }
+  speciesdb.name <- species.url[species.url$species==species,"speciesdb_name"][[1]]
   
   #-----------NCBI orthologs data----------
   print("Process NCBI orthologs data...")
@@ -413,15 +394,19 @@ for(species in list.species){
     reactome.data <- list()
   }
   #Species is present in Reactome DB but species name does not match exactly. Perform approximate match
-  if(length(reactome.data)==0 && species %in% c("Dog")){
+  if(length(reactome.data)==0 && species %in% c("Dog","MalariaParasite")){
     reactome.ncbi.species <- unique(reactome.ncbi$V6)
     reactome.ncbi.species <- reactome.ncbi.species[which.min(stringdist(species.scientific.name, 
       reactome.ncbi.species, method = "jw"))]
-    reactome.ensembl.species <- unique(reactome.ensembl$V6)
-    reactome.ensembl.species <- reactome.ensembl.species[which.min(stringdist(species.scientific.name, 
-      reactome.ensembl.species, method = "jw"))]
     reactome.ncbi.data <- reactome.ncbi[reactome.ncbi$V6==reactome.ncbi.species,]
-    reactome.ensembl.data <- reactome.ensembl[reactome.ensembl$V6==reactome.ensembl.species,]
+    if(species %in% c("Dog")){
+      reactome.ensembl.species <- unique(reactome.ensembl$V6)
+      reactome.ensembl.species <- reactome.ensembl.species[which.min(stringdist(species.scientific.name, 
+        reactome.ensembl.species, method = "jw"))]
+      reactome.ensembl.data <- reactome.ensembl[reactome.ensembl$V6==reactome.ensembl.species,]
+    } else {
+      reactome.ensembl.data <- reactome.ensembl[reactome.ensembl$V6=="NA",]
+    }
     reactome.data <- list(ncbi=reactome.ncbi.data,ensembl=reactome.ensembl.data)
   }
   print("Process Reactome data...")
@@ -522,29 +507,14 @@ for(species in list.species){
     build.package.args$ensemblOld <- ensembl.old.table
   }
   #SPECIES-DB DATA
-  if(!is.na(speciesdb.name)){
-    speciesdb.table <- annotation.table[,c("GID",speciesdb.name)]
-    speciesdb.table <- speciesdb.table[!is.na(speciesdb.table[[speciesdb.name]]),]
-    speciesdb.table <- as.data.frame(speciesdb.table %>% separate_rows(all_of(c(speciesdb.name)),sep="\\|"))
-    if(nrow(speciesdb.table)>0){
-      build.package.args$speciesId <- speciesdb.table
-    }
-  }
-  #ADDITIONAL SPECIES-DB DATA
-  if(!is.na(additional.db)){
-    additionaldb.table <- annotation.table[,c("GID",additional.db)]
-    additionaldb.table <- additionaldb.table[!is.na(additionaldb.table[[additional.db]]),]
-    additionaldb.table <- as.data.frame(additionaldb.table %>% separate_rows(all_of(c(additional.db)),sep="\\|"))
-    if(nrow(additionaldb.table)>0){
-      build.package.args$additionaldbId <- additionaldb.table
-    }
-  }
-  if(species=="Rice"){
-    additional.speciesdb.table <- annotation.table[,c("GID","MSU")]
-    additional.speciesdb.table <- additional.speciesdb.table[!is.na(additional.speciesdb.table[["MSU"]]),]
-    additional.speciesdb.table <- as.data.frame(additional.speciesdb.table %>% separate_rows(all_of(c("MSU")),sep="\\|"))
-    if(nrow(additional.speciesdb.table)>0){
-      build.package.args$additionaldbSpeciesId <- additional.speciesdb.table
+  if(!is.null(speciesdb.name)){
+    for(db.name in speciesdb.name){
+      speciesdb.table <- annotation.table[,c("GID",db.name)]
+      speciesdb.table <- speciesdb.table[!is.na(speciesdb.table[[db.name]]),]
+      speciesdb.table <- as.data.frame(speciesdb.table %>% separate_rows(all_of(c(db.name)),sep="\\|"))
+      if(nrow(speciesdb.table)>0){
+        build.package.args[[db.name]] <- speciesdb.table
+      }
     }
   }
   #UNIPROT

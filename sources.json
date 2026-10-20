@@ -178,7 +178,7 @@
       "official_name": "Oryza sativa",
       "taxid": 39947,
       "kegg_code": "osa",
-      "speciesdb_name": "RAP",
+      "speciesdb_name": ["RAP","MSU"],
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Plants/Oryza_sativa.gene_info.gz",
       "speciesdb": "https://shigen.nig.ac.jp/rice/oryzabase/gene/download?classtag=GENE_EN_LIST",
       "go": "https://current.geneontology.org/annotations/gaf/ORYSJ-uniprot.gaf.gz"
@@ -218,7 +218,7 @@
       "official_name": "Escherichia coli K12 MG1655",
       "taxid": [83333,511145],
       "kegg_code": "eco",
-      "speciesdb_name": "ECOCYC",
+      "speciesdb_name": ["ECOCYC","ECHOBASE"],
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Archaea_Bacteria/Escherichia_coli_str._K-12_substr._MG1655.gene_info.gz",
       "go": "https://current.geneontology.org/annotations/gaf/ECOLI-uniprot.gaf.gz"
     },
@@ -237,7 +237,7 @@
       "official_name": "Canis lupus familiaris",
       "taxid": 9615,
       "kegg_code": "cfa",
-      "speciesdb_name": "VGNC",
+      "speciesdb_name": ["VGNC","RGD"],
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Canis_familiaris.gene_info.gz",
       "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
       "go": "https://current.geneontology.org/annotations/gaf/CANLF-uniprot.gaf.gz"
@@ -247,10 +247,68 @@
       "official_name": "Bos taurus",
       "taxid": 9913,
       "kegg_code": "bta",
-      "speciesdb_name": "VGNC",
+      "speciesdb_name": ["VGNC","BGD"],
       "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Bos_taurus.gene_info.gz",
       "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
       "go": "https://current.geneontology.org/annotations/gaf/BOVIN-uniprot.gaf.gz"
+    },
+    {
+      "species": "Pig",
+      "official_name": "Sus scrofa",
+      "taxid": 9823,
+      "kegg_code": "ssc",
+      "speciesdb_name": ["VGNC","RGD"],
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Sus_scrofa.gene_info.gz",
+      "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
+      "go": "https://current.geneontology.org/annotations/gaf/PIG-uniprot.gaf.gz"
+    },
+    {
+      "species": "SocialAmoeba",
+      "official_name": "Dictyostelium discoideum",
+      "taxid": [44689,352472],
+      "kegg_code": "ddi",
+      "speciesdb_name": ["AMOEBADB","DICTYBASE"],
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Protozoa/All_Protozoa.gene_info.gz",
+      "speciesdb": "https://dicty.labs.duke.edu/assets/dictybase-downloads/general/gene_information.txt",
+      "go": "https://current.geneontology.org/annotations/gaf/DICDI-uniprot.gaf.gz"
+    },
+    {
+      "species": "Chimpanzee",
+      "official_name": "Pan troglodytes",
+      "taxid": 9598,
+      "kegg_code": "ptr",
+      "speciesdb_name": "VGNC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Pan_troglodytes.gene_info.gz",
+      "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
+      "go": "https://current.geneontology.org/annotations/gaf/PANTR-uniprot.gaf.gz"
+    },
+    {
+      "species": "AfricanMalariaMosquito",
+      "official_name": "Anopheles gambiae",
+      "taxid": 7165,
+      "kegg_code": "aga",
+      "speciesdb_name": "VECTORBASE",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Invertebrates/Anopheles_gambiae.gene_info.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/ANOGA-uniprot.gaf.gz"
+    },
+    {
+      "species": "MalariaParasite",
+      "official_name": "Plasmodium falciparum 3D7",
+      "taxid": 36329,
+      "kegg_code": "pfa",
+      "speciesdb_name": "PLASMODB",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Protozoa/Plasmodium_falciparum.gene_info.gz",
+      "go": "https://current.geneontology.org/annotations/gaf/PLAF7-uniprot.gaf.gz"
+    },
+    {
+      "species": "Horse",
+      "official_name": "Equus caballus",
+      "taxid": 9796,
+      "kegg_code": "ecb",
+      "speciesdb_name": "VGNC",
+      "ncbi_current": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/All_Mammalia.gene_info.gz",
+      "speciesdb": "https://storage.googleapis.com/public-download-files/vgnc/tsv/all/all_vgnc_gene_set_All.tsv",
+      "go": "https://current.geneontology.org/annotations/gaf/HORSE-uniprot.gaf.gz"
     }
   ]
 }
